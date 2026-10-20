@@ -19,6 +19,7 @@ import { fileURLToPath } from 'node:url';
 import { ConfigStore } from './config/store.js';
 import { ensureStateDir, adminTokenRotatedPath } from './config/paths.js';
 import { HealthTracker } from './providers/health.js';
+import { catalogFor } from './providers/catalog.js';
 import { PowerShellDpapiDriver, assertDpapiScriptUsable, findDpapiScript, findPowerShell } from './security/dpapi.js';
 import { SecretStore } from './security/secret-store.js';
 import { AdminSessionStore, deriveSecretId, generateToken } from './security/auth.js';
@@ -116,6 +117,39 @@ async function rotateAdminToken(secrets: SecretStore): Promise<void> {
   console.log('');
 }
 
+/** Ensure Kilo and OpenCode providers exist and are enabled by default. */
+async function ensureDefaultProviders(configStore: ConfigStore): Promise<void> {
+  const config = configStore.get();
+  const existingIds = new Set(config.providers.map((p) => p.id));
+  const toAdd: string[] = [];
+  if (!existingIds.has('kilo')) toAdd.push('kilo');
+  if (!existingIds.has('opencode')) toAdd.push('opencode');
+  if (toAdd.length === 0) return;
+
+  await configStore.mutate((draft) => {
+    for (const kind of toAdd) {
+      const catalog = catalogFor(kind as never);
+      draft.providers.push({
+        id: kind,
+        kind: kind as never,
+        label: catalog.label,
+        enabled: true,
+        priority: 100,
+        anonymous: !catalog.requiresKey,
+        models: catalog.models.map((m) => ({
+          id: m.id,
+          free: true,
+          verified: m.verified,
+          contextWindow: m.contextWindow,
+          maxOutputTokens: m.maxOutputTokens,
+          source: m.source,
+        })),
+        keys: [],
+      });
+    }
+  });
+}
+
 /** Start the gateway. */
 async function main(): Promise<void> {
   await ensureStateDir();
@@ -140,6 +174,7 @@ async function main(): Promise<void> {
   }
 
   await ensureTokens(secrets);
+  await ensureDefaultProviders(configStore);
 
   // Recovering a lost admin token is an explicit, deliberate action. It is
   // never part of a normal start, so the token never reaches console output
