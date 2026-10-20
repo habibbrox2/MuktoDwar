@@ -190,6 +190,8 @@ $('btn-lock').addEventListener('click', () => void lockConsole());
  * ------------------------------------------------------------------ */
 
 async function refreshAll() {
+  const overlay = $('loading-overlay');
+  if (overlay) overlay.hidden = false;
   try {
     const [config, catalog, status] = await Promise.all([
       api('/admin/config'),
@@ -206,6 +208,9 @@ async function refreshAll() {
       return;
     }
     toast(error.message, 'bad');
+  } finally {
+    const overlay = $('loading-overlay');
+    if (overlay) overlay.hidden = true;
   }
 }
 

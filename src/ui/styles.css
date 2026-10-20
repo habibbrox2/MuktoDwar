@@ -459,6 +459,18 @@ body {
 
 /* ---------- toast ---------- */
 
+.loading-overlay {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgb(11 15 20 / .72);
+  backdrop-filter: blur(4px);
+  z-index: 40;
+}
+
+.loading-overlay[hidden] { display: none; }
+
 .toast {
   position: fixed;
   bottom: 20px;
