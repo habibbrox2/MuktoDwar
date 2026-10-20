@@ -172,6 +172,23 @@ export async function registerAdminRoutes(
     }
   });
 
+  /** Return the gateway token for admin-side tooling (e.g. the API playground). */
+  app.get('/admin/gateway-token', async (request: FastifyRequest, reply: FastifyReply) => {
+    if (!(await guard(request, reply))) return;
+    const records = deps.secrets.list().filter((record) => record.kind === 'gateway-token');
+    const first = records[0];
+    if (!first) {
+      reply.code(404).send({ error: { message: 'No gateway token exists yet.', type: 'not_found' } });
+      return;
+    }
+    const token = await deps.secrets.get(first.id).catch(() => null);
+    if (!token) {
+      reply.code(404).send({ error: { message: 'The gateway token could not be read.', type: 'not_found' } });
+      return;
+    }
+    reply.send({ token });
+  });
+
   /** Return the initial admin token until it has been rotated. */
   app.get('/admin/default-token', async (_request: FastifyRequest, reply: FastifyReply) => {
     if (await pathExists(adminTokenRotatedPath())) {

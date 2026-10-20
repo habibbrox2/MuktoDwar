@@ -109,6 +109,9 @@
         <button type="button" role="tab" class="tab" data-tab="tokens" aria-label="Tokens" title="Tokens" aria-selected="false" aria-controls="panel-tokens">
           <span class="sym" aria-hidden="true">⚿</span>
         </button>
+        <button type="button" role="tab" class="tab" data-tab="playground" aria-label="API Playground" title="API Playground" aria-selected="false" aria-controls="panel-playground">
+          <span class="sym" aria-hidden="true">▶</span>
+        </button>
       </nav>
 
       <main class="panels">
@@ -241,6 +244,53 @@
             <button type="button" class="btn" id="token-output-copy" aria-label="Copy token">
               <span class="sym" aria-hidden="true">⧉</span>
             </button>
+          </div>
+        </section>
+
+        <!-- API Playground -->
+        <section id="panel-playground" role="tabpanel" class="panel" hidden aria-labelledby="tab-playground">
+          <div class="panel__head">
+            <h2 aria-label="API Playground"><span class="sym" aria-hidden="true">▶</span></h2>
+          </div>
+          <div class="grid">
+            <label class="field">
+              <span class="field__label">Model</span>
+              <select id="pg-model" class="field__input"></select>
+            </label>
+          </div>
+          <label class="field">
+            <span class="field__label">Message</span>
+            <textarea id="pg-message" class="field__input" rows="4" placeholder="Hello!"></textarea>
+          </label>
+          <div class="dialog__actions" style="justify-content:flex-start">
+            <button type="button" class="btn btn--primary" id="pg-send">Send</button>
+            <button type="button" class="btn" id="pg-cancel" hidden>Cancel</button>
+            <button type="button" class="btn" id="pg-clear">Clear</button>
+          </div>
+          <div id="pg-output" class="token-output" style="margin-top:12px;min-height:80px;white-space:pre-wrap"></div>
+
+          <h3 style="margin-top:18px">Client setup snippets</h3>
+          <div class="grid-2">
+            <div class="card">
+              <p class="eyebrow">cURL</p>
+              <pre><code id="pg-snippet-curl"></code></pre>
+              <button type="button" class="btn" data-copy="pg-snippet-curl">Copy</button>
+            </div>
+            <div class="card">
+              <p class="eyebrow">JavaScript</p>
+              <pre><code id="pg-snippet-js"></code></pre>
+              <button type="button" class="btn" data-copy="pg-snippet-js">Copy</button>
+            </div>
+            <div class="card">
+              <p class="eyebrow">PHP</p>
+              <pre><code id="pg-snippet-php"></code></pre>
+              <button type="button" class="btn" data-copy="pg-snippet-php">Copy</button>
+            </div>
+            <div class="card">
+              <p class="eyebrow">OpenCode</p>
+              <pre><code id="pg-snippet-opencode"></code></pre>
+              <button type="button" class="btn" data-copy="pg-snippet-opencode">Copy</button>
+            </div>
           </div>
         </section>
       </main>

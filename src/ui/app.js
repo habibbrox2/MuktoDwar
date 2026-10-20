@@ -198,6 +198,9 @@ for (const tab of document.querySelectorAll('.tab')) {
     for (const panel of document.querySelectorAll('.panel')) {
       panel.hidden = panel.id !== `panel-${name}`;
     }
+    if (name === 'playground') {
+      loadPlaygroundModels().then(updateSnippets);
+    }
   });
 }
 
@@ -232,6 +235,127 @@ async function refreshAll() {
     if (overlay) overlay.hidden = true;
   }
 }
+
+let pgAbort = null;
+let pgGatewayToken = null;
+
+async function ensureGatewayToken() {
+  if (pgGatewayToken) return pgGatewayToken;
+  const data = await api('/admin/gateway-token');
+  pgGatewayToken = data?.token ?? null;
+  return pgGatewayToken;
+}
+
+async function loadPlaygroundModels() {
+  const select = $('pg-model');
+  if (!select) return;
+  try {
+    const token = await ensureGatewayToken();
+    const res = await fetch('/v1/models', { headers: { authorization: `Bearer ${token}` } });
+    const data = await res.json();
+    select.replaceChildren();
+    for (const m of data?.data ?? []) {
+      select.append(el('option', { value: m.id, text: m.id }));
+    }
+  } catch (error) {
+    toast(error.message, 'bad');
+  }
+}
+
+function updateSnippets() {
+  const model = $('pg-model')?.value || 'gpt-4o-mini';
+  const base = window.location.origin;
+  const token = pgGatewayToken || 'YOUR_GATEWAY_TOKEN';
+  const curl = `curl ${base}/v1/chat/completions \\\n  -H "Content-Type: application/json" \\\n  -H "Authorization: Bearer ${token}" \\\n  -d '{"model":"${model}","messages":[{"role":"user","content":"Hello!"}]}'`;
+  const js = `const res = await fetch('${base}/v1/chat/completions', {\n  method: 'POST',\n  headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ${token}' },\n  body: JSON.stringify({ model: '${model}', messages: [{ role: 'user', content: 'Hello!' }] }),\n});\nconst data = await res.json();\nconsole.log(data.choices[0].message.content);`;
+  const php = `<?php\n$ch = curl_init('${base}/v1/chat/completions');\ncurl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json', 'Authorization: Bearer ${token}']);\ncurl_setopt($ch, CURLOPT_POSTFIELDS, json_encode(['model'=>'${model}','messages'=>[['role'=>'user','content'=>'Hello!']]]));\ncurl_setopt($ch, CURLOPT_RETURNTRANSFER, true);\n$res = curl_exec($ch);\necho $res;`;
+  const opencode = `{\n  "provider": "openai-compatible",\n  "baseURL": "${base}/v1",\n  "apiKey": "${token}",\n  "model": "${model}"\n}`;
+  const set = (id, text) => { const n = $(id); if (n) n.textContent = text; };
+  set('pg-snippet-curl', curl);
+  set('pg-snippet-js', js);
+  set('pg-snippet-php', php);
+  set('pg-snippet-opencode', opencode);
+}
+
+$('pg-model')?.addEventListener('change', updateSnippets);
+
+$('pg-send')?.addEventListener('click', async () => {
+  const model = $('pg-model').value;
+  const message = $('pg-message').value.trim();
+  if (!message) { toast('Enter a message.', 'bad'); return; }
+  const output = $('pg-output');
+  output.textContent = '';
+  const token = await ensureGatewayToken();
+  const controller = new AbortController();
+  pgAbort = controller;
+  $('pg-cancel').hidden = false;
+  $('pg-send').disabled = true;
+  try {
+    const res = await fetch('/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ model, messages: [{ role: 'user', content: message }], stream: true }),
+      signal: controller.signal,
+    });
+    if (!res.ok || !res.body) {
+      const text = await res.text();
+      output.textContent = `Error ${res.status}: ${text}`;
+      return;
+    }
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\\n');
+      buffer = lines.pop() ?? '';
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed.startsWith('data:')) continue;
+        const payload = trimmed.slice(5).trim();
+        if (payload === '[DONE]') continue;
+        try {
+          const json = JSON.parse(payload);
+          const delta = json.choices?.[0]?.delta?.content ?? json.choices?.[0]?.message?.content ?? '';
+          if (delta) output.textContent += delta;
+        } catch {
+          // ignore non-JSON chunks
+        }
+      }
+    }
+  } catch (error) {
+    if (error.name !== 'AbortError') output.textContent += `\\nError: ${error.message}`;
+  } finally {
+    pgAbort = null;
+    $('pg-cancel').hidden = true;
+    $('pg-send').disabled = false;
+    updateSnippets();
+  }
+});
+
+$('pg-cancel')?.addEventListener('click', () => {
+  if (pgAbort) pgAbort.abort();
+});
+
+$('pg-clear')?.addEventListener('click', () => {
+  $('pg-message').value = '';
+  $('pg-output').textContent = '';
+});
+
+document.querySelectorAll('[data-copy]').forEach((btn) => {
+  btn.addEventListener('click', async () => {
+    const id = btn.getAttribute('data-copy');
+    const text = $(id)?.textContent ?? '';
+    if (await copyToClipboard(text)) toast('Copied.', 'ok');
+    else toast('Copy failed.', 'bad');
+  });
+});
+
+// Load playground models after entering console
+const _origEnterConsole = enterConsole;
+// hook not needed; call in refreshAll? Instead load on first tab click.
 
 function render() {
   renderStatusBar();
