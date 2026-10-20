@@ -501,6 +501,20 @@ body {
   .row { flex-wrap: wrap; }
 }
 
+@media (max-width: 720px) {
+  .workspace { flex-direction: column; }
+  .tabs {
+    flex-direction: row;
+    width: 100%;
+    height: auto;
+    border-right: 0;
+    border-bottom: 1px solid rgb(56 130 246 / .22);
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+  .tab { width: auto; min-width: 44px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; }
 }
