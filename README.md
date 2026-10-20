@@ -400,3 +400,17 @@ See [docs/providers.md](docs/providers.md) for the full verification matrix with
 - **`verified` means "free on 2026-10-20"**, never "free forever". Free tiers change; re-read the matrix when you see new `429`s or `404`s.
 - **Health state is in-memory** and intentionally resets on restart.
 - **Admin UI is a single page** with no history or undo; changes persist immediately.
+
+
+## Building for Windows
+
+A GitHub Actions workflow (.github/workflows/release.yml) builds a single-file Windows executable and an Inno Setup installer on the windows-latest runner, triggered by version tags (*).
+
+Local build:
+
+`powershell
+npm run build
+npm run build:sea
+`
+
+The executable is written to uild/muktodwar.exe. Run the installer script with Inno Setup to produce uild/installer/MuktoDwar-Setup.exe.

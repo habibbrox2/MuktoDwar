@@ -48,6 +48,9 @@ function findUiDir(): string | null {
     resolve(here, '..', '..', 'src', 'ui'),
     resolve(process.cwd(), 'src', 'ui'),
     resolve(process.cwd(), 'ui'),
+    resolve(dirname(process.execPath), 'ui'),
+    resolve(dirname(process.execPath), 'src', 'ui'),
+    resolve(dirname(process.execPath), '..', 'ui'),
   ];
   for (const candidate of candidates) {
     if (existsSync(join(candidate, 'index.html'))) return candidate;
@@ -107,13 +110,14 @@ export async function buildApp(deps: AppDependencies): Promise<GatewayApp> {
   // Cookies carry the admin session; the static plugin serves the admin UI.
   await app.register(fastifyCookie);
   const uiDir = findUiDir() ?? resolve(process.cwd(), 'src', 'ui');
+  const brandDir = [resolve(process.cwd(), 'assets', 'brand'), resolve(dirname(process.execPath), 'assets', 'brand'), resolve(dirname(process.execPath), '..', 'assets', 'brand')].find((d) => existsSync(join(d, 'muktodwar-canonical-mark.svg'))) ?? resolve(process.cwd(), 'assets', 'brand');
   await app.register(fastifyStatic, {
     root: uiDir,
     prefix: '/ui/',
     index: false,
   });
   await app.register(fastifyStatic, {
-    root: resolve(process.cwd(), 'assets', 'brand'),
+    root: brandDir,
     prefix: '/brand/',
     index: false,
     decorateReply: false,
