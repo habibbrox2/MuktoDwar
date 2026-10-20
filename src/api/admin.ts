@@ -135,6 +135,43 @@ export async function registerAdminRoutes(
     reply.send({ ok: true });
   });
 
+  /** Test a provider connection and optionally list its remote models. */
+  app.post('/admin/providers/test-connection', async (request: FastifyRequest, reply: FastifyReply) => {
+    if (!(await guard(request, reply))) return;
+    const body = (request.body ?? {}) as { kind?: string; baseUrl?: string; apiKey?: string };
+    const kind = body.kind;
+    const catalog = kind ? catalogFor(kind as never) : null;
+    const base = (body.baseUrl && body.baseUrl.trim()) || catalog?.baseUrl || '';
+    if (!base) {
+      reply.code(400).send({ error: { message: 'No base URL available for this provider.', type: 'bad_request' } });
+      return;
+    }
+    const url = base.replace(/\/+$/, '') + '/models';
+    const headers: Record<string, string> = { accept: 'application/json' };
+    if (body.apiKey) headers.authorization = `Bearer ${body.apiKey}`;
+    try {
+      const response = await fetch(url, { headers, signal: AbortSignal.timeout(15000) });
+      const text = await response.text();
+      let parsed: unknown = null;
+      try { parsed = JSON.parse(text); } catch { /* not JSON */ }
+      const ids = Array.isArray((parsed as { data?: unknown[] })?.data)
+        ? (parsed as { data: Array<{ id?: string }> }).data.map((m) => m?.id).filter(Boolean)
+        : Array.isArray(parsed)
+          ? (parsed as Array<{ id?: string }>).map((m) => m?.id).filter(Boolean)
+          : [];
+      reply.send({
+        ok: response.ok,
+        status: response.status,
+        modelCount: ids.length,
+        models: ids.slice(0, 50),
+      });
+    } catch (error) {
+      reply.code(502).send({
+        error: { message: error instanceof Error ? error.message : 'Connection failed.', type: 'upstream_error' },
+      });
+    }
+  });
+
   /** Return the initial admin token until it has been rotated. */
   app.get('/admin/default-token', async (_request: FastifyRequest, reply: FastifyReply) => {
     if (await pathExists(adminTokenRotatedPath())) {

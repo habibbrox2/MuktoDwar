@@ -370,6 +370,7 @@ function openProviderDialog(provider) {
   $('provider-id').value = provider?.id ?? '';
   $('provider-id').disabled = Boolean(provider);
   $('provider-key').value = '';
+  $('provider-base-url').value = provider?.baseUrl ?? '';
   $('provider-priority').value = String(provider?.priority ?? 100);
   $('provider-enabled').checked = provider?.enabled ?? false;
   $('provider-anonymous').checked = provider?.anonymous ?? false;
@@ -380,6 +381,75 @@ function openProviderDialog(provider) {
 }
 
 $('provider-kind').addEventListener('change', syncKindBehaviour);
+
+async function testConnection() {
+  const kind = $('provider-kind').value;
+  const baseUrl = $('provider-base-url').value.trim();
+  const apiKey = $('provider-key').value.trim();
+  try {
+    const result = await api('/admin/providers/test-connection', {
+      method: 'POST',
+      body: JSON.stringify({ kind, baseUrl: baseUrl || undefined, apiKey: apiKey || undefined }),
+    });
+    if (result.ok) toast(`Connected. ${result.modelCount} model(s) available.`, 'ok');
+    else toast(`Connection returned status ${result.status}.`, 'bad');
+  } catch (error) {
+    toast(error.message, 'bad');
+  }
+}
+
+async function fetchRemoteModels() {
+  const kind = $('provider-kind').value;
+  const baseUrl = $('provider-base-url').value.trim();
+  const apiKey = $('provider-key').value.trim();
+  try {
+    const result = await api('/admin/providers/test-connection', {
+      method: 'POST',
+      body: JSON.stringify({ kind, baseUrl: baseUrl || undefined, apiKey: apiKey || undefined }),
+    });
+    if (!result.ok || !Array.isArray(result.models) || result.models.length === 0) {
+      toast('No remote models returned.', 'bad');
+      return;
+    }
+    const container = $('provider-models');
+    container.replaceChildren();
+    const selected = new Set();
+    for (const id of result.models) {
+      const chip = el('span', {
+        class: 'chip',
+        role: 'checkbox',
+        tabindex: '0',
+        'aria-checked': 'false',
+        'data-selected': 'false',
+        'data-unverified': 'true',
+      }, [
+        el('span', { 'aria-hidden': 'true', text: '○' }),
+        el('span', { text: id }),
+        el('span', { class: 'tag tag--warn', text: 'remote' }),
+      ]);
+      const toggle = () => {
+        const next = chip.dataset.selected !== 'true';
+        chip.dataset.selected = String(next);
+        chip.setAttribute('aria-checked', String(next));
+        chip.firstChild.textContent = next ? '✓' : '○';
+      };
+      chip.addEventListener('click', toggle);
+      chip.addEventListener('keydown', (event) => {
+        if (event.key === ' ' || event.key === 'Enter') {
+          event.preventDefault();
+          toggle();
+        }
+      });
+      container.append(chip);
+    }
+    toast(`Fetched ${result.models.length} remote model(s).`, 'ok');
+  } catch (error) {
+    toast(error.message, 'bad');
+  }
+}
+
+$('provider-test-connection')?.addEventListener('click', testConnection);
+$('provider-fetch-models')?.addEventListener('click', fetchRemoteModels);
 
 function syncKindBehaviour() {
   const kind = $('provider-kind').value;
@@ -497,6 +567,7 @@ $('provider-form').addEventListener('submit', async (event) => {
     enabled: $('provider-enabled').checked,
     anonymous: $('provider-anonymous').checked,
     priority: Number($('provider-priority').value),
+    baseUrl: $('provider-base-url').value.trim() || undefined,
     models,
   };
 

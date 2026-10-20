@@ -248,25 +248,31 @@
       <form id="provider-form" method="dialog" class="dialog__card" autocomplete="off">
         <h2 id="provider-dialog-title" class="dialog__title"><span class="sym" aria-hidden="true">✚</span></h2>
 
-        <label class="field" aria-label="Provider">
-          <span class="field__label" aria-hidden="true">✎</span>
+        <label class="field">
+          <span class="field__label">Provider</span>
           <select id="provider-kind" class="field__input"></select>
         </label>
 
-        <label class="field" aria-label="Label">
-          <span class="field__label" aria-hidden="true">✎</span>
+        <label class="field">
+          <span class="field__label">Label</span>
           <input id="provider-label" class="field__input" required />
         </label>
 
-        <label class="field" aria-label="Identifier">
-          <span class="field__label" aria-hidden="true">✎</span>
+        <label class="field">
+          <span class="field__label">Identifier</span>
           <input id="provider-id" class="field__input" required spellcheck="false" />
         </label>
 
-        <label class="field" aria-label="API key">
-          <span class="field__label" aria-hidden="true">𔓟</span>
+        <label class="field">
+          <span class="field__label">API key</span>
           <input id="provider-key" class="field__input" type="password" spellcheck="false" placeholder="stored encrypted" />
           <span class="field__hint">Leave blank to keep the existing key.</span>
+        </label>
+
+        <label class="field">
+          <span class="field__label">Custom API endpoint (override)</span>
+          <input id="provider-base-url" class="field__input" type="url" spellcheck="false" placeholder="https://api.example.com/v1" />
+          <span class="field__hint">Leave blank to use the provider default.</span>
         </label>
 
         <label class="field" aria-label="Priority">
@@ -287,6 +293,14 @@
         <fieldset class="fieldset">
           <legend>Free model allowlist</legend>
           <div id="provider-models" class="chips"></div>
+          <div class="dialog__actions" style="justify-content:flex-start;margin-top:6px">
+            <button type="button" class="btn" id="provider-test-connection" aria-label="Test connection">
+              Test connection
+            </button>
+            <button type="button" class="btn" id="provider-fetch-models" aria-label="Fetch models">
+              Fetch remote models
+            </button>
+          </div>
           <p class="field__hint">
             Only models marked free can be selected. Unverified models are shown with a warning.
           </p>
