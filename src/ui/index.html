@@ -21,13 +21,6 @@
           <img class="brand-mark brand-mark--gate" src="/brand/muktodwar-mark.svg" alt="" width="42" height="42" />
           <span><strong>MuktoDwar</strong><small>Local AI gateway</small></span>
         </h1>
-        <p class="gate__hint">
-          The administrator token is created automatically on first run and printed once in
-          the gateway console. It stays valid until you rotate it — from the Tokens section
-          after signing in, or with
-          <code>node dist/index.js --rotate-admin-token</code>. Lost it? Recover it with
-          <code>node dist/index.js --show-admin-token</code>.
-        </p>
         <div id="gate-default-token" class="token-row" hidden>
           <div class="token-row__text">
             <strong>Default administrator token</strong>
@@ -53,6 +46,13 @@
         <button type="submit" class="btn btn--primary" id="gate-submit" aria-label="Unlock">
           <span class="sym" aria-hidden="true">→</span>
         </button>
+        <p class="gate__hint">
+          The administrator token is created automatically on first run and printed once in
+          the gateway console. It stays valid until you rotate it — from the Tokens section
+          after signing in, or with
+          <code>node dist/index.js --rotate-admin-token</code>. Lost it? Recover it with
+          <code>node dist/index.js --show-admin-token</code>.
+        </p>
       </form>
     </div>
 
