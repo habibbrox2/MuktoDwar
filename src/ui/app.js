@@ -236,9 +236,27 @@ $('btn-lock').addEventListener('click', () => void lockConsole());
  * Data loading
  * ------------------------------------------------------------------ */
 
+function renderLoading() {
+  const list = $('provider-list');
+  if (list) {
+    list.replaceChildren();
+    for (let i = 0; i < 3; i++) {
+      const row = el('div', { class: 'row' }, [
+        el('div', { class: 'skeleton', style: 'width:30px;height:30px;border-radius:8px' }),
+        el('div', { class: 'row__main' }, [
+          el('div', { class: 'skeleton', style: 'width:40%;margin-bottom:6px' }),
+          el('div', { class: 'skeleton', style: 'width:60%' }),
+        ]),
+      ]);
+      list.append(row);
+    }
+  }
+}
+
 async function refreshAll() {
   const overlay = $('loading-overlay');
   if (overlay) overlay.hidden = false;
+  renderLoading();
   try {
     const [config, catalog, status] = await Promise.all([
       api('/admin/config'),
@@ -445,7 +463,16 @@ function renderProviders() {
   const list = $('provider-list');
   list.replaceChildren();
   const providers = state.config.providers;
-  $('providers-empty').hidden = providers.length > 0;
+  const empty = $('providers-empty');
+  empty.hidden = providers.length > 0;
+  if (providers.length === 0) {
+    empty.replaceChildren();
+    empty.append(
+      el('span', { class: 'sym', style: 'font-size:24px;display:block;margin-bottom:6px', 'aria-hidden': 'true', text: '⬢' }),
+      el('strong', { text: 'No providers yet' }),
+      el('span', { text: 'Add your first provider to start routing requests.' }),
+    );
+  }
 
   for (const provider of providers) {
     const keys = provider.keys.length;
