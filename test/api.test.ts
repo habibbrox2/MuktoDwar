@@ -311,6 +311,148 @@ describe('public API', () => {
     });
   });
 
+  describe('embeddings, images and responses', () => {
+    it('rejects an embeddings request with no token', async () => {
+      const { ctx } = await buildConfiguredApp([provider({ id: 'p1' })]);
+      const response = await ctx.app.app.inject({
+        method: 'POST',
+        url: '/v1/embeddings',
+        payload: { model: 'model-a', input: 'hello' },
+      });
+      expect(response.statusCode).toBe(401);
+    });
+
+    it('returns embeddings from the upstream provider', async () => {
+      const { ctx } = await buildConfiguredApp([provider({ id: 'p1' })]);
+      stubFetch([
+        new Response(
+          JSON.stringify({
+            object: 'list',
+            data: [{ embedding: [0.25, 0.75], index: 0 }],
+            usage: { prompt_tokens: 4, total_tokens: 4 },
+            model: 'model-a',
+          }),
+          { status: 200 },
+        ),
+      ]);
+
+      const response = await ctx.app.app.inject({
+        method: 'POST',
+        url: '/v1/embeddings',
+        headers: authHeaders,
+        payload: { model: 'model-a', input: 'hello' },
+      });
+
+      expect(response.statusCode).toBe(200);
+      const payload = response.json() as {
+        object: string;
+        model: string;
+        data: Array<{ object: string; embedding: number[]; index: number }>;
+        usage: { prompt_tokens: number };
+      };
+      expect(payload.object).toBe('embedding');
+      expect(payload.model).toBe('model-a');
+      expect(payload.data[0]?.object).toBe('embedding');
+      expect(payload.data[0]?.embedding).toEqual([0.25, 0.75]);
+      expect(payload.data[0]?.index).toBe(0);
+      expect(payload.usage.prompt_tokens).toBe(4);
+      expect(fetchCalls).toHaveLength(1);
+      expect(fetchCalls[0]?.url).toBe('https://p1.example.test/v1/embeddings');
+      expect(fetchCalls[0]?.headers.authorization).toBe('Bearer key-for-p1-secret');
+    });
+
+    it('returns an image from the upstream provider', async () => {
+      const { ctx } = await buildConfiguredApp([provider({ id: 'p1' })]);
+      stubFetch([
+        new Response(
+          JSON.stringify({
+            created: 1,
+            data: [{ url: 'https://img.example.test/a.png', revised_prompt: 'a red cat' }],
+          }),
+          { status: 200 },
+        ),
+      ]);
+
+      const response = await ctx.app.app.inject({
+        method: 'POST',
+        url: '/v1/images/generations',
+        headers: authHeaders,
+        payload: { model: 'model-a', prompt: 'a red cat', size: '512x512' },
+      });
+
+      expect(response.statusCode).toBe(200);
+      const payload = response.json() as {
+        created: number;
+        data: Array<{ url: string; revised_prompt?: string }>;
+      };
+      expect(typeof payload.created).toBe('number');
+      expect(payload.data[0]?.url).toBe('https://img.example.test/a.png');
+      expect(payload.data[0]?.revised_prompt).toBe('a red cat');
+      expect(fetchCalls).toHaveLength(1);
+      expect(fetchCalls[0]?.url).toBe('https://p1.example.test/v1/images/generations');
+    });
+
+    it('rejects an image request with an unsupported size', async () => {
+      const { ctx } = await buildConfiguredApp([provider({ id: 'p1' })]);
+      const response = await ctx.app.app.inject({
+        method: 'POST',
+        url: '/v1/images/generations',
+        headers: authHeaders,
+        payload: { model: 'model-a', prompt: 'a red cat', size: '99x99' },
+      });
+
+      expect(response.statusCode).toBe(400);
+      const payload = response.json() as { error: { type: string; code: string } };
+      expect(payload.error.type).toBe('invalid_request_error');
+      expect(payload.error.code).toBe('invalid_request');
+      expect(fetchCalls).toHaveLength(0);
+    });
+
+    it('returns a Responses API result', async () => {
+      const { ctx } = await buildConfiguredApp([provider({ id: 'p1' })]);
+      stubFetch([
+        new Response(
+          JSON.stringify({
+            id: 'resp_1',
+            object: 'response',
+            status: 'completed',
+            output: [{ type: 'message', role: 'assistant', content: [] }],
+          }),
+          { status: 200 },
+        ),
+      ]);
+
+      const response = await ctx.app.app.inject({
+        method: 'POST',
+        url: '/v1/responses',
+        headers: authHeaders,
+        payload: { model: 'model-a', instructions: 'be brief', input: 'hi' },
+      });
+
+      expect(response.statusCode).toBe(200);
+      const payload = response.json() as { id: string; object: string; status: string };
+      expect(payload.id).toBe('resp_1');
+      expect(payload.object).toBe('response');
+      expect(payload.status).toBe('completed');
+      expect(fetchCalls).toHaveLength(1);
+      expect(fetchCalls[0]?.url).toBe('https://p1.example.test/v1/responses');
+    });
+
+    it('rejects an unknown model with 404 before contacting any provider', async () => {
+      const { ctx } = await buildConfiguredApp([provider({ id: 'p1' })]);
+      const response = await ctx.app.app.inject({
+        method: 'POST',
+        url: '/v1/responses',
+        headers: authHeaders,
+        payload: { model: 'not-a-real-model', instructions: 'x', input: 'hi' },
+      });
+
+      expect(response.statusCode).toBe(404);
+      expect((response.json() as { error: { code: string } }).error.code).toBe('no_candidate');
+      expect(fetchCalls).toHaveLength(0);
+    });
+  });
+
   describe('local-only guard', () => {
     it('rejects a request whose Host header is not loopback', async () => {
       const { ctx } = await buildConfiguredApp([provider({ id: 'p1' })]);

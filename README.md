@@ -14,7 +14,7 @@
 - 🆓 **Free-only** — providers ship **disabled**; models must be **explicitly allowlisted** and marked free by you.
 - 🔐 **Windows DPAPI secret storage** — API keys encrypted at rest with `CurrentUser` scope, **never** plaintext, fail-closed on any error.
 - 📡 **Streaming** — SSE with backpressure, streamed straight through without buffering the upstream response.
-- 🧪 **Tested** — 115 tests: unit, integration, security, routing, streaming, configuration.
+- 🧪 **Tested** — 121 tests: unit, integration, security, routing, streaming, configuration.
 
 ---
 
@@ -217,7 +217,7 @@ npm run dev         # tsx watch, hot reload
 npm run build       # tsc -p tsconfig.build.json  → dist/
 npm start           # node dist/index.js
 npm run typecheck   # tsc --noEmit, strict
-npm test            # vitest run  (115 tests)
+npm test            # vitest run  (121 tests)
 npm run test:watch  # vitest watch
 npm run verify      # typecheck + test + build
 ```
@@ -226,7 +226,7 @@ npm run verify      # typecheck + test + build
 
 ```
 Test Files  7 passed (7)
-     Tests  115 passed (115)
+     Tests  121 passed (121)
 ```
 
 | Suite | Tests | Covers |
@@ -236,7 +236,7 @@ Test Files  7 passed (7)
 | `security` | 16 | loopback guard, Host header, origin, bearer, sessions, secret ids |
 | `redact` | 12 | credential patterns, registered values, nested structures |
 | `router` | 26 | free-only enforcement, priority, failover, cooldown, breaker, request shaping, upstream paths |
-| `api` | 19 | health, models, chat, SSE, 421 guard, admin auth |
+| `api` | 25 | health, models, chat, SSE, embeddings, images, responses, 421 guard, admin auth |
 | `config` | 18 | validation, defaults, corruption, atomicity |
 
 ---

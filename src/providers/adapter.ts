@@ -320,11 +320,19 @@ export class OpenAiCompatibleAdapter implements ProviderAdapter {
         retryable: false,
       });
     }
+    // OpenAI-compatible providers return the image inside
+    // `data: [{ url, b64_json, revised_prompt }]`; a few also put the fields
+    // at the top level. Accept both shapes, but never a bare timestamp.
+    const entry =
+      Array.isArray(parsed.data) && parsed.data[0] && typeof parsed.data[0] === 'object'
+        ? parsed.data[0]
+        : {};
     return {
       result: {
-        url: parsed.url ?? parsed.created ?? '',
-        b64_json: parsed.b64_json ?? parsed.b64json,
-        revised_prompt: parsed.revised_prompt ?? parsed.revisedPrompt,
+        url: entry.url ?? parsed.url ?? '',
+        b64_json: entry.b64_json ?? entry.b64json ?? parsed.b64_json ?? parsed.b64json,
+        revised_prompt:
+          entry.revised_prompt ?? entry.revisedPrompt ?? parsed.revised_prompt ?? parsed.revisedPrompt,
       },
       latencyMs: Date.now() - startedAt,
     };
