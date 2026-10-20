@@ -72,6 +72,28 @@ function el(tag, props = {}, children = []) {
 }
 
 let toastTimer = null;
+
+function confirmDialog(message, title = 'Confirm') {
+  return new Promise((resolve) => {
+    const dialog = $('confirm-dialog');
+    $('confirm-title').textContent = title;
+    $('confirm-message').textContent = message;
+    const ok = $('confirm-ok');
+    const cancel = $('confirm-cancel');
+    const cleanup = () => {
+      ok.removeEventListener('click', onOk);
+      cancel.removeEventListener('click', onCancel);
+      dialog.removeEventListener('close', onClose);
+    };
+    const onOk = () => { cleanup(); dialog.close(); resolve(true); };
+    const onCancel = () => { cleanup(); dialog.close(); resolve(false); };
+    const onClose = () => { cleanup(); resolve(false); };
+    ok.addEventListener('click', onOk);
+    cancel.addEventListener('click', onCancel);
+    dialog.addEventListener('close', onClose);
+    dialog.showModal();
+  });
+}
 function toast(message, tone = 'info') {
   const node = $('toast');
   node.textContent = message;
@@ -585,8 +607,9 @@ $('provider-form').addEventListener('submit', async (event) => {
 });
 
 async function deleteProvider(provider) {
-  const confirmed = window.confirm(
-    `Delete "${provider.label}"?\n\nIts stored API keys will be removed as well. This cannot be undone.`,
+  const confirmed = await confirmDialog(
+    `Delete "${provider.label}"? Its stored API keys will be removed as well. This cannot be undone.`,
+    'Delete provider',
   );
   if (!confirmed) return;
   try {
@@ -613,7 +636,7 @@ $('btn-rotate-gateway').addEventListener('click', async () => {
 });
 
 $('btn-rotate-admin').addEventListener('click', async () => {
-  if (!window.confirm('Rotate the administrator token?\n\nEvery active admin session will end immediately.')) return;
+  if (!(await confirmDialog('Rotate the administrator token? Every active admin session will end immediately.', 'Rotate token'))) return;
   try {
     const result = await api('/admin/tokens/admin/rotate', { method: 'POST' });
     showToken(result.token);

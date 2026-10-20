@@ -319,6 +319,17 @@
       </form>
     </dialog>
 
+    <dialog id="confirm-dialog" class="dialog">
+      <form method="dialog" class="dialog__card">
+        <h2 id="confirm-title" class="dialog__title">Confirm</h2>
+        <p id="confirm-message" class="panel__note"></p>
+        <div class="dialog__actions">
+          <button type="button" class="btn" id="confirm-cancel">Cancel</button>
+          <button type="submit" class="btn btn--primary" id="confirm-ok">Confirm</button>
+        </div>
+      </form>
+    </dialog>
+
     <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 
     <script type="module" src="/ui/app.js"></script>
