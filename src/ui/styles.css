@@ -547,6 +547,32 @@ body {
 
 .console { background: linear-gradient(180deg, rgb(10 15 24 / .74), transparent 220px); }
 
+.workspace {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.tabs {
+  flex-direction: column;
+  width: 72px;
+  padding: 12px 8px;
+  gap: 6px;
+  border-right: 1px solid rgb(56 130 246 / .22);
+  border-bottom: 0;
+  overflow-y: auto;
+}
+
+.tab {
+  width: 100%;
+  justify-content: center;
+}
+
+.panels {
+  flex: 1;
+  overflow-y: auto;
+}
+
 .topbar {
   min-height: 68px;
   padding: 9px 22px;
