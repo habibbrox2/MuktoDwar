@@ -526,7 +526,16 @@ function renderModels() {
   const list = $('model-list');
   list.replaceChildren();
   const entries = state.status.models;
-  $('models-empty').hidden = entries.length > 0;
+  const modelsEmpty = $('models-empty');
+  modelsEmpty.hidden = entries.length > 0;
+  if (entries.length === 0) {
+    modelsEmpty.replaceChildren();
+    modelsEmpty.append(
+      el('span', { class: 'sym', style: 'font-size:24px;display:block;margin-bottom:6px', 'aria-hidden': 'true', text: '❖' }),
+      el('strong', { text: 'No free models allowlisted' }),
+      el('span', { text: 'Allowlist models from the Providers tab to enable routing.' }),
+    );
+  }
 
   for (const entry of entries) {
     const title = el('div', { class: 'row__title' }, [
@@ -565,7 +574,16 @@ function renderHealth() {
   const body = $('status-body');
   body.replaceChildren();
   const rows = state.status.health ?? [];
-  $('status-empty').hidden = rows.length > 0;
+  const statusEmpty = $('status-empty');
+  statusEmpty.hidden = rows.length > 0;
+  if (rows.length === 0) {
+    statusEmpty.replaceChildren();
+    statusEmpty.append(
+      el('span', { class: 'sym', style: 'font-size:24px;display:block;margin-bottom:6px', 'aria-hidden': 'true', text: '◴' }),
+      el('strong', { text: 'No provider contacted yet' }),
+      el('span', { text: 'Send a request through the gateway to see health data.' }),
+    );
+  }
 
   for (const row of rows) {
     const cooling = row.cooldownUntil > Date.now();
