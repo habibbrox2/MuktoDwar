@@ -379,6 +379,11 @@
 
         <fieldset class="fieldset">
           <legend>Free model allowlist</legend>
+          <input id="provider-model-search" class="field__input" type="search" placeholder="Filter models…" style="margin-bottom:8px" />
+          <div class="dialog__actions" style="justify-content:flex-start;margin-bottom:6px">
+            <button type="button" class="btn" id="provider-select-all">Select all free</button>
+            <button type="button" class="btn" id="provider-clear-models">Clear</button>
+          </div>
           <div id="provider-models" class="chips"></div>
           <div class="dialog__actions" style="justify-content:flex-start;margin-top:6px">
             <button type="button" class="btn" id="provider-test-connection" aria-label="Test connection">

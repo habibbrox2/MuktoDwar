@@ -689,26 +689,45 @@ function renderModelChips(provider) {
   const catalog = state.catalog.providers.find((entry) => entry.kind === kind);
   const selected = new Set((provider?.models ?? []).map((model) => model.id));
 
+  const search = $('provider-model-search');
+  if (search) {
+    search.value = '';
+    search.oninput = () => {
+      const q = search.value.trim().toLowerCase();
+      for (const chip of container.querySelectorAll('.chip')) {
+        const id = chip.dataset.modelId ?? '';
+        chip.hidden = q !== '' && !id.toLowerCase().includes(q);
+      }
+    };
+  }
+
   for (const model of catalog.models) {
+    const meta = [
+      model.contextWindow ? `context ${model.contextWindow}` : null,
+      model.maxOutputTokens ? `max out ${model.maxOutputTokens}` : null,
+      model.source,
+    ].filter(Boolean).join(' · ');
     const chip = el('span', {
       class: 'chip',
       role: 'checkbox',
       tabindex: '0',
+      'data-model-id': model.id,
       'aria-checked': String(selected.has(model.id)),
       'data-selected': String(selected.has(model.id)),
       'data-unverified': String(!model.verified),
-      title: model.source,
+      title: meta,
     }, [
-      el('span', { 'aria-hidden': 'true', text: selected.has(model.id) ? '☑' : '☐' }),
+      el('span', { 'aria-hidden': 'true', text: selected.has(model.id) ? '\u2713' : '\u25CB' }),
       el('span', { text: model.id }),
       model.verified ? null : el('span', { class: 'tag tag--warn', text: 'unverified' }),
+      model.contextWindow ? el('span', { class: 'tag', text: `${Math.round(model.contextWindow / 1000)}k` }) : null,
     ]);
 
     const toggle = () => {
       const next = chip.dataset.selected !== 'true';
       chip.dataset.selected = String(next);
       chip.setAttribute('aria-checked', String(next));
-      chip.firstChild.textContent = next ? '☑' : '☐';
+      chip.firstChild.textContent = next ? '\u2713' : '\u25CB';
     };
     chip.addEventListener('click', toggle);
     chip.addEventListener('keydown', (event) => {
@@ -741,30 +760,26 @@ function renderModelChips(provider) {
   }
 }
 
-function renderProviderKeys(provider) {
-  const container = $('provider-keys');
-  container.replaceChildren();
-  if (!provider?.keys?.length) return;
-  for (const key of provider.keys) {
-    const chip = el('span', { class: 'chip', 'data-key-id': key.id }, [
-      el('span', { text: `${key.label ?? key.id} (${key.enabled ? 'enabled' : 'disabled'})` }),
-      el('button', { type: 'button', class: 'btn btn--danger', text: 'Remove', 'data-remove-key': key.id }),
-    ]);
-    const btn = chip.querySelector('[data-remove-key]');
-    btn.addEventListener('click', async () => {
-      const ok = await confirmDialog(`Remove key "${key.label ?? key.id}"?`, 'Remove key');
-      if (!ok) return;
-      try {
-        state.config = await api(`/admin/providers/${encodeURIComponent(provider.id)}/keys/${encodeURIComponent(key.id)}`, { method: 'DELETE' });
-        toast('Key removed.', 'ok');
-        const updated = state.config.providers.find((p) => p.id === provider.id);
-        renderProviderKeys(updated);
-      } catch (error) {
-        toast(error.message, 'bad');
-      }
-    });
-    container.append(chip);
-  }
+const selectAllBtn = $('provider-select-all');
+const clearModelsBtn = $('provider-clear-models');
+if (selectAllBtn) {
+  selectAllBtn.addEventListener('click', () => {
+    for (const chip of document.querySelectorAll('#provider-models .chip')) {
+      if (chip.hidden) continue;
+      chip.dataset.selected = 'true';
+      chip.setAttribute('aria-checked', 'true');
+      chip.firstChild.textContent = '\u2713';
+    }
+  });
+}
+if (clearModelsBtn) {
+  clearModelsBtn.addEventListener('click', () => {
+    for (const chip of document.querySelectorAll('#provider-models .chip')) {
+      chip.dataset.selected = 'false';
+      chip.setAttribute('aria-checked', 'false');
+      chip.firstChild.textContent = '\u25CB';
+    }
+  });
 }
 
 $('provider-form').addEventListener('submit', async (event) => {
