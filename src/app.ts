@@ -110,7 +110,7 @@ export async function buildApp(deps: AppDependencies): Promise<GatewayApp> {
   // Cookies carry the admin session; the static plugin serves the admin UI.
   await app.register(fastifyCookie);
   const uiDir = findUiDir() ?? resolve(process.cwd(), 'src', 'ui');
-  const brandDir = [resolve(process.cwd(), 'assets', 'brand'), resolve(dirname(process.execPath), 'assets', 'brand'), resolve(dirname(process.execPath), '..', 'assets', 'brand')].find((d) => existsSync(join(d, 'muktodwar-canonical-mark.svg'))) ?? resolve(process.cwd(), 'assets', 'brand');
+  const brandDir = [resolve(process.cwd(), 'assets', 'brand'), resolve(dirname(process.execPath), 'assets', 'brand'), resolve(dirname(process.execPath), '..', 'assets', 'brand')].find((d) => existsSync(join(d, 'muktodwar-mark.svg'))) ?? resolve(process.cwd(), 'assets', 'brand');
   await app.register(fastifyStatic, {
     root: uiDir,
     prefix: '/ui/',
