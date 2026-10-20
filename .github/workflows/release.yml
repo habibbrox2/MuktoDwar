@@ -2,6 +2,7 @@ name: Release Windows
 
 on:
   push:
+    branches: [main]
     tags: ['v*']
   workflow_dispatch:
 
@@ -44,9 +45,20 @@ jobs:
             build/muktodwar.exe
             build/installer/*.exe
 
+      - name: Compute release tag
+        id: tag
+        shell: pwsh
+        run: |
+          if ("${{ github.ref_type }}" -eq "tag") {
+            "tag=${{ github.ref_name }}" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          } else {
+            "tag=build-${{ github.run_number }}" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          }
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ steps.tag.outputs.tag }}
           files: |
             build/muktodwar.exe
             build/installer/*.exe
