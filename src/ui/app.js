@@ -98,12 +98,8 @@ async function loadDefaultToken() {
       value.textContent = data.token;
       container.hidden = false;
       $('gate-copy-token').addEventListener('click', async () => {
-        try {
-          await navigator.clipboard.writeText(data.token);
-          toast('Token copied.', 'ok');
-        } catch {
-          toast('Copy failed. Select the token manually.', 'bad');
-        }
+        if (await copyToClipboard(data.token)) toast('Token copied.', 'ok');
+        else toast('Copy failed. Select the token manually.', 'bad');
       });
     }
   } catch {
@@ -556,8 +552,39 @@ $('btn-rotate-admin').addEventListener('click', async () => {
   }
 });
 
+async function copyToClipboard(text) {
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch {
+    // Fall through to the legacy path.
+  }
+  try {
+    const area = document.createElement('textarea');
+    area.value = text;
+    area.setAttribute('readonly', '');
+    area.style.position = 'fixed';
+    area.style.top = '-9999px';
+    document.body.append(area);
+    area.select();
+    const ok = document.execCommand('copy');
+    area.remove();
+    return ok;
+  } catch {
+    return false;
+  }
+}
+
 function showToken(token) {
   $('token-output-value').textContent = token;
   $('token-output').hidden = false;
   toast('New token generated. Copy it now.', 'ok');
 }
+
+$('token-output-copy')?.addEventListener('click', async () => {
+  const text = $('token-output-value').textContent || '';
+  if (await copyToClipboard(text)) toast('Token copied.', 'ok');
+  else toast('Copy failed. Select the token manually.', 'bad');
+});
