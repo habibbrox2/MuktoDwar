@@ -136,6 +136,52 @@ export async function findDpapiScript(startDir?: string): Promise<string | null>
   return null;
 }
 
+/**
+ * Environment passed to the codec child.
+ *
+ * PowerShell and .NET expect a normal Windows process environment. When the
+ * child received only `SystemRoot`, script startup on one machine (the
+ * GitHub Actions Windows runner) took ~29s — far beyond the codec timeout —
+ * because profile and temp path lookups had nothing to resolve. The list is
+ * an explicit allowlist rather than the parent's full environment so that no
+ * gateway-specific secret can leak into the child process.
+ */
+function codecEnvironment(): NodeJS.ProcessEnv {
+  const allow = [
+    'SystemRoot',
+    'windir',
+    'SystemDrive',
+    'ComSpec',
+    'PATH',
+    'PATHEXT',
+    'TEMP',
+    'TMP',
+    'USERNAME',
+    'USERPROFILE',
+    'HOMEDRIVE',
+    'HOMEPATH',
+    'APPDATA',
+    'LOCALAPPDATA',
+    'PUBLIC',
+    'ProgramData',
+    'ProgramFiles',
+    'ProgramFiles(x86)',
+    'ProgramW6432',
+    'OS',
+    'PROCESSOR_ARCHITECTURE',
+    'PROCESSOR_ARCHITEW6432',
+    'NUMBER_OF_PROCESSORS',
+    'PSModulePath',
+  ];
+  const env: NodeJS.ProcessEnv = {};
+  for (const name of allow) {
+    const value = process.env[name];
+    if (value !== undefined && value !== '') env[name] = value;
+  }
+  if (env.SystemRoot === undefined) env.SystemRoot = 'C:\\Windows';
+  return env;
+}
+
 /** Locate powershell.exe via well-known install locations. */
 export async function findPowerShell(): Promise<string | null> {
   const candidates = [
@@ -265,7 +311,7 @@ export class PowerShellDpapiDriver implements DpapiDriver {
           shell: false,
           windowsHide: true,
           stdio: ['pipe', 'pipe', 'pipe'],
-          env: { SystemRoot: process.env.SystemRoot ?? 'C:\\Windows' },
+          env: codecEnvironment(),
         });
       } catch (error) {
         rejectPromise(
