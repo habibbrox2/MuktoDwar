@@ -14,6 +14,7 @@
  */
 
 import { existsSync, writeFileSync } from 'node:fs';
+import { exec } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { ConfigStore } from './config/store.js';
 import { ensureStateDir, adminTokenRotatedPath } from './config/paths.js';
@@ -182,6 +183,13 @@ async function main(): Promise<void> {
   console.log(`  Admin UI:       ${address}/`);
   console.log(`  OpenAI API:     ${address}/v1`);
   console.log('');
+
+  // Open the dashboard automatically when the server starts.
+  try {
+    exec(`start "" "${address}/"`, { windowsHide: true });
+  } catch {
+    // Best effort: never fail startup because the browser could not open.
+  }
 }
 
 /** True when the module is the process entrypoint. */
