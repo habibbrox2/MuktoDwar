@@ -10,3 +10,7 @@ coverage/
 .vitest/
 *.tsbuildinfo
 .freebuff/
+
+build/
+screenshots/
+.tmp-font/
