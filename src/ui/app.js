@@ -89,7 +89,9 @@ function toast(message, tone = 'info') {
 
 async function loadDefaultToken() {
   try {
-    const data = await api('/admin/default-token');
+    const response = await fetch('/admin/default-token', { credentials: 'same-origin' });
+    if (!response.ok || response.status === 204) return;
+    const data = await response.json();
     const container = $('gate-default-token');
     const value = $('gate-default-token-value');
     if (data?.token) {

@@ -138,18 +138,18 @@ export async function registerAdminRoutes(
   /** Return the initial admin token until it has been rotated. */
   app.get('/admin/default-token', async (_request: FastifyRequest, reply: FastifyReply) => {
     if (await pathExists(adminTokenRotatedPath())) {
-      reply.code(404).send({ error: { message: 'The default admin token is no longer available.', type: 'not_found' } });
+      reply.code(204).send();
       return;
     }
     const adminRecords = deps.secrets.list().filter((record) => record.kind === 'admin-token');
     const first = adminRecords[0];
     if (!first) {
-      reply.code(404).send({ error: { message: 'No admin token exists yet.', type: 'not_found' } });
+      reply.code(204).send();
       return;
     }
     const token = await deps.secrets.get(first.id).catch(() => null);
     if (!token) {
-      reply.code(404).send({ error: { message: 'The admin token could not be read.', type: 'not_found' } });
+      reply.code(204).send();
       return;
     }
     reply.send({ token });
