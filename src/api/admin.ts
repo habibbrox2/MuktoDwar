@@ -385,6 +385,37 @@ export async function registerAdminRoutes(
     }
   });
 
+  /** Remove a single API key from a provider. */
+  app.delete('/admin/providers/:id/keys/:keyId', async (request: FastifyRequest, reply: FastifyReply) => {
+    if (!(await guard(request, reply))) return;
+    const params = request.params as { id: string; keyId: string };
+    try {
+      const current = deps.getConfig();
+      const provider = current.providers.find((entry) => entry.id === params.id);
+      if (!provider) {
+        reply.code(404).send({ error: { message: 'No such provider.' } });
+        return;
+      }
+      const key = provider.keys.find((entry) => entry.id === params.keyId);
+      if (!key) {
+        reply.code(404).send({ error: { message: 'No such key.' } });
+        return;
+      }
+      await deps.secrets.remove(key.secretId);
+      const next: GatewayConfig = {
+        ...current,
+        providers: current.providers.map((entry) =>
+          entry.id === params.id
+            ? { ...entry, keys: entry.keys.filter((k) => k.id !== params.keyId) }
+            : entry,
+        ),
+      };
+      reply.send(sanitiseConfig(await deps.updateConfig(next)));
+    } catch (error) {
+      sendError(reply, error);
+    }
+  });
+
   /** Delete a provider and its stored keys. */
   app.delete('/admin/providers/:id', async (request: FastifyRequest, reply: FastifyReply) => {
     if (!(await guard(request, reply))) return;

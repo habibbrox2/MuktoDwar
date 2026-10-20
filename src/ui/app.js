@@ -399,10 +399,26 @@ $('btn-save-routing').addEventListener('click', async () => {
  * ------------------------------------------------------------------ */
 
 $('btn-add-provider').addEventListener('click', () => openProviderDialog(null));
-$('provider-cancel').addEventListener('click', () => $('provider-dialog').close());
+$('provider-cancel').addEventListener('click', async () => {
+  if (providerDirty) {
+    const ok = await confirmDialog('Discard unsaved changes?', 'Unsaved changes');
+    if (!ok) return;
+  }
+  $('provider-dialog').close();
+});
+
+$('provider-dialog').addEventListener('input', markProviderDirty);
+$('provider-dialog').addEventListener('change', markProviderDirty);
+
+let providerDirty = false;
+
+function markProviderDirty() {
+  providerDirty = true;
+}
 
 function openProviderDialog(provider) {
   state.editing = provider ?? null;
+  providerDirty = false;
   const kindSelect = $('provider-kind');
   kindSelect.replaceChildren();
 
@@ -422,6 +438,7 @@ function openProviderDialog(provider) {
   $('provider-anonymous').checked = provider?.anonymous ?? false;
 
   renderModelChips(provider);
+  renderProviderKeys(provider);
   $('provider-dialog').showModal();
   syncKindBehaviour();
 }
@@ -580,6 +597,32 @@ function renderModelChips(provider) {
   }
 }
 
+function renderProviderKeys(provider) {
+  const container = $('provider-keys');
+  container.replaceChildren();
+  if (!provider?.keys?.length) return;
+  for (const key of provider.keys) {
+    const chip = el('span', { class: 'chip', 'data-key-id': key.id }, [
+      el('span', { text: `${key.label ?? key.id} (${key.enabled ? 'enabled' : 'disabled'})` }),
+      el('button', { type: 'button', class: 'btn btn--danger', text: 'Remove', 'data-remove-key': key.id }),
+    ]);
+    const btn = chip.querySelector('[data-remove-key]');
+    btn.addEventListener('click', async () => {
+      const ok = await confirmDialog(`Remove key "${key.label ?? key.id}"?`, 'Remove key');
+      if (!ok) return;
+      try {
+        state.config = await api(`/admin/providers/${encodeURIComponent(provider.id)}/keys/${encodeURIComponent(key.id)}`, { method: 'DELETE' });
+        toast('Key removed.', 'ok');
+        const updated = state.config.providers.find((p) => p.id === provider.id);
+        renderProviderKeys(updated);
+      } catch (error) {
+        toast(error.message, 'bad');
+      }
+    });
+    container.append(chip);
+  }
+}
+
 $('provider-form').addEventListener('submit', async (event) => {
   event.preventDefault();
 
@@ -622,6 +665,7 @@ $('provider-form').addEventListener('submit', async (event) => {
 
   try {
     state.config = await api('/admin/providers', { method: 'POST', body: JSON.stringify(payload) });
+    providerDirty = false;
     $('provider-dialog').close();
     toast('Provider saved.', 'ok');
     await refreshAll();

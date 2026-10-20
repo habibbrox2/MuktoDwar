@@ -270,8 +270,10 @@
         <label class="field">
           <span class="field__label">API key</span>
           <input id="provider-key" class="field__input" type="password" spellcheck="false" placeholder="stored encrypted" />
-          <span class="field__hint">Leave blank to keep the existing key.</span>
+          <span class="field__hint">Leave blank to keep the existing key. Adding a value appends a new key.</span>
         </label>
+
+        <div id="provider-keys" class="chips"></div>
 
         <label class="field">
           <span class="field__label">Custom API endpoint (override)</span>
