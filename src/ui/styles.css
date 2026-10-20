@@ -384,7 +384,10 @@ body {
   font-family: var(--mono);
   cursor: pointer;
   user-select: none;
+  transition: transform .1s ease, border-color .1s ease, background .1s ease;
 }
+.chip:hover { transform: translateY(-1px); border-color: var(--accent); }
+.chip:active { transform: translateY(0); }
 
 .chip[data-selected="true"] {
   border-color: var(--accent);
