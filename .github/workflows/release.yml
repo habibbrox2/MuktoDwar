@@ -53,9 +53,9 @@ jobs:
           choco install wixtoolset -y
           $env:Path = "C:\Program Files (x86)\WiX Toolset v3.11\bin;" + $env:Path
           heat dir build/app -cg ProductComponents -gg -scom -sreg -sfrag -srd -dr INSTALLFOLDER -var var.SourceDir -out installer/harvested.wxs
+          New-Item -ItemType Directory -Force -Path build/installer | Out-Null
           candle -dSourceDir=build/app installer/muktodwar.wxs installer/harvested.wxs -out build/
           light build/muktodwar.wixobj build/harvested.wixobj -out build/installer/MuktoDwar.msi
-          New-Item -ItemType Directory -Force -Path build/installer | Out-Null
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
