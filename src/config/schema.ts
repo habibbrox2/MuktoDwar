@@ -29,6 +29,7 @@ export const providerKindSchema = z.enum([
   'siliconflow',
   'ollama',
   'lmstudio',
+  'cloudflare',
   'custom',
 ]);
 

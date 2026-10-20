@@ -483,6 +483,24 @@ export const CATALOG: Record<ProviderKind, CatalogProvider> = {
     unverified: false,
   },
 
+  cloudflare: {
+    kind: 'cloudflare',
+    label: 'Cloudflare Workers AI',
+    baseUrl: 'https://api.cloudflare.com/client/v4/accounts/YOUR_ACCOUNT_ID/ai/v1',
+    requiresKey: true,
+    freeWithoutCard: true,
+    freeTerms:
+      'Cloudflare Workers AI includes a free allocation of neurons per day; usage beyond the free tier is billed. Confirm current free limits in the Cloudflare dashboard.',
+    caveats: [
+      'Requires a Cloudflare account ID and an API token with Workers AI permissions.',
+      'Replace YOUR_ACCOUNT_ID in the base URL (or set a custom endpoint override) with your account ID.',
+      'Model IDs use the @cf/... namespace (e.g. @cf/meta/llama-3.1-8b-instruct).',
+    ],
+    models: [],
+    docsUrl: 'https://developers.cloudflare.com/workers-ai/',
+    unverified: true,
+  },
+
   custom: {
     kind: 'custom',
     label: 'Custom OpenAI-compatible endpoint',

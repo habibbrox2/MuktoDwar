@@ -130,7 +130,7 @@
         <section id="panel-providers" role="tabpanel" class="panel" aria-labelledby="tab-providers">
           <div class="panel__head">
             <h2><span class="sym" aria-hidden="true">⬢</span> Providers</h2>
-            <button type="button" class="btn btn--primary" id="btn-add-provider" aria-label="Add provider">
+            <button type="button" class="btn btn--primary" id="btn-add-provider" aria-label="Add provider" disabled>
               <span class="sym" aria-hidden="true">✚</span><span class="btn__label">Add</span>
             </button>
           </div>
@@ -253,8 +253,28 @@
             <p class="token-output__label">Copy this now. It will not be shown again.</p>
             <code id="token-output-value" class="token-output__value"></code>
             <button type="button" class="btn" id="token-output-copy" aria-label="Copy token">
-              <span class="sym" aria-hidden="true">⧉</span>
+              <span class="sym" aria-hidden="true">⧉</span><span class="btn__label">Copy</span>
             </button>
+          </div>
+
+          <div class="card" style="margin-top:14px">
+            <p class="eyebrow">How to connect (copy &amp; paste)</p>
+            <label class="field">
+              <span class="field__label">API endpoint</span>
+              <input id="usage-endpoint" class="field__input" readonly />
+            </label>
+            <label class="field">
+              <span class="field__label">Model ID</span>
+              <select id="usage-model" class="field__input"></select>
+            </label>
+            <label class="field">
+              <span class="field__label">Gateway token</span>
+              <input id="usage-token" class="field__input" readonly placeholder="Generate a token to fill this" />
+            </label>
+            <p class="field__hint">
+              Note: a new token is displayed once, immediately after it is generated. It is stored encrypted and can never be read back. Use the endpoint and model above with your gateway token as <code>Authorization: Bearer &lt;token&gt;</code>.
+            </p>
+            <button type="button" class="btn btn--primary" id="usage-copy-curl">Copy cURL</button>
           </div>
         </section>
 

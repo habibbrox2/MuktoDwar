@@ -1,5 +1,5 @@
-/**
- * Local AI Gateway — admin console.
+﻿/**
+ * Local AI Gateway â€” admin console.
  *
  * Plain ES modules, no framework, no build step. The administrator token is
  * exchanged for an httpOnly session cookie at sign-in, so no secret is ever
@@ -227,6 +227,9 @@ for (const tab of tabs) {
     if (name === 'settings') {
       loadSettings();
     }
+    if (name === 'tokens') {
+      loadUsageInfo();
+    }
   });
   tab.addEventListener('keydown', (event) => {
     const idx = tabs.indexOf(tab);
@@ -279,6 +282,7 @@ async function refreshAll() {
     state.config = config;
     state.catalog = catalog;
     state.status = status;
+    if ($('btn-add-provider')) $('btn-add-provider').disabled = false;
     render();
   } catch (error) {
     if (error.status === 401 || error.status === 403) {
@@ -317,6 +321,36 @@ async function loadSettings() {
 $('settings-motion')?.addEventListener('click', () => {
   const btn = $('btn-motion');
   if (btn) btn.click();
+});
+
+async function loadUsageInfo() {
+  const endpointInput = $('usage-endpoint');
+  if (endpointInput) endpointInput.value = `${window.location.origin}/v1/chat/completions`;
+  const modelSelect = $('usage-model');
+  const tokenInput = $('usage-token');
+  try {
+    const token = await ensureGatewayToken();
+    if (tokenInput) tokenInput.value = token;
+    const res = await fetch('/v1/models', { headers: { authorization: `Bearer ${token}` } });
+    const data = await res.json();
+    if (modelSelect) {
+      modelSelect.replaceChildren();
+      for (const m of data?.data ?? []) {
+        modelSelect.append(el('option', { value: m.id, text: m.id }));
+      }
+    }
+  } catch (error) {
+    if (tokenInput) tokenInput.value = '';
+  }
+}
+
+$('usage-copy-curl')?.addEventListener('click', async () => {
+  const endpoint = $('usage-endpoint')?.value ?? '';
+  const model = $('usage-model')?.value ?? '';
+  const token = $('usage-token')?.value ?? '';
+  const curl = `curl ${endpoint} \\\n  -H "Content-Type: application/json" \\\n  -H "Authorization: Bearer ${token}" \\\n  -d '{"model":"${model}","messages":[{"role":"user","content":"Hello!"}]}'`;
+  if (await copyToClipboard(curl)) toast('cURL copied.', 'ok');
+  else toast('Copy failed.', 'bad');
 });
 
 async function loadPlaygroundModels() {
@@ -441,7 +475,7 @@ const pgHistory = [];
 const pgHistorySelect = $('pg-history');
 function refreshPgHistory() {
   if (!pgHistorySelect) return;
-  pgHistorySelect.replaceChildren(el('option', { value: '', text: '— select a previous prompt —' }));
+  pgHistorySelect.replaceChildren(el('option', { value: '', text: 'â€” select a previous prompt â€”' }));
   for (const prompt of pgHistory.slice().reverse()) {
     pgHistorySelect.append(el('option', { value: prompt, text: prompt.slice(0, 60) }));
   }
@@ -481,7 +515,7 @@ function renderProviders() {
   if (providers.length === 0) {
     empty.replaceChildren();
     empty.append(
-      el('span', { class: 'sym', style: 'font-size:24px;display:block;margin-bottom:6px', 'aria-hidden': 'true', text: '⬢' }),
+      el('span', { class: 'sym', style: 'font-size:24px;display:block;margin-bottom:6px', 'aria-hidden': 'true', text: 'â¬¢' }),
       el('strong', { text: 'No providers yet' }),
       el('span', { text: 'Add your first provider to start routing requests.' }),
     );
@@ -495,7 +529,7 @@ function renderProviders() {
       class: 'row__icon',
       'data-state': provider.enabled ? 'on' : 'off',
       'aria-hidden': 'true',
-      text: provider.enabled ? '◉' : '○',
+      text: provider.enabled ? 'â—‰' : 'â—‹',
     });
 
     const title = el('div', { class: 'row__title' }, [
@@ -521,14 +555,14 @@ function renderProviders() {
         title: 'Edit',
         'aria-label': `Edit ${provider.label}`,
         onclick: () => openProviderDialog(provider),
-      }, [el('span', { class: 'sym', 'aria-hidden': 'true', text: '✎' })]),
+      }, [el('span', { class: 'sym', 'aria-hidden': 'true', text: 'âœŽ' })]),
       el('button', {
         type: 'button',
         class: 'icon-btn',
         title: 'Delete',
         'aria-label': `Delete ${provider.label}`,
         onclick: () => void deleteProvider(provider),
-      }, [el('span', { class: 'sym', 'aria-hidden': 'true', text: '✕' })]),
+      }, [el('span', { class: 'sym', 'aria-hidden': 'true', text: 'âœ•' })]),
     ]);
 
     list.append(el('li', { class: 'row' }, [icon, el('div', { class: 'row__main' }, [title, meta]), actions]));
@@ -544,7 +578,7 @@ function renderModels() {
   if (entries.length === 0) {
     modelsEmpty.replaceChildren();
     modelsEmpty.append(
-      el('span', { class: 'sym', style: 'font-size:24px;display:block;margin-bottom:6px', 'aria-hidden': 'true', text: '❖' }),
+      el('span', { class: 'sym', style: 'font-size:24px;display:block;margin-bottom:6px', 'aria-hidden': 'true', text: 'â–' }),
       el('strong', { text: 'No free models allowlisted' }),
       el('span', { text: 'Allowlist models from the Providers tab to enable routing.' }),
     );
@@ -565,7 +599,7 @@ function renderModels() {
 
     list.append(
       el('li', { class: 'row' }, [
-        el('span', { class: 'row__icon', 'aria-hidden': 'true', text: '❖' }),
+        el('span', { class: 'row__icon', 'aria-hidden': 'true', text: 'â–' }),
         el('div', { class: 'row__main' }, [title, meta]),
       ]),
     );
@@ -592,7 +626,7 @@ function renderHealth() {
   if (rows.length === 0) {
     statusEmpty.replaceChildren();
     statusEmpty.append(
-      el('span', { class: 'sym', style: 'font-size:24px;display:block;margin-bottom:6px', 'aria-hidden': 'true', text: '◴' }),
+      el('span', { class: 'sym', style: 'font-size:24px;display:block;margin-bottom:6px', 'aria-hidden': 'true', text: 'â—´' }),
       el('strong', { text: 'No provider contacted yet' }),
       el('span', { text: 'Send a request through the gateway to see health data.' }),
     );
@@ -609,7 +643,7 @@ function renderHealth() {
         el('td', { text: row.providerId }),
         el('td', { text: row.keyId }),
         el('td', {}, [el('span', { class: `tag tag--${tone}`, text: stateText })]),
-        el('td', { text: row.latencyMs === null ? '—' : `${Math.round(row.latencyMs)} ms` }),
+        el('td', { text: row.latencyMs === null ? 'â€”' : `${Math.round(row.latencyMs)} ms` }),
         el('td', { text: String(row.successes) }),
         el('td', { text: String(row.failures) }),
       ]),
@@ -665,6 +699,10 @@ function markProviderDirty() {
 }
 
 function openProviderDialog(provider) {
+  if (!state.catalog) {
+    toast('Still loading providers. Please wait.', 'bad');
+    return;
+  }
   state.editing = provider ?? null;
   providerDirty = false;
   const kindSelect = $('provider-kind');
@@ -738,7 +776,7 @@ async function fetchRemoteModels() {
         'data-selected': 'false',
         'data-unverified': 'true',
       }, [
-        el('span', { 'aria-hidden': 'true', text: '○' }),
+        el('span', { 'aria-hidden': 'true', text: 'â—‹' }),
         el('span', { text: id }),
         el('span', { class: 'tag tag--warn', text: 'remote' }),
       ]);
@@ -746,7 +784,7 @@ async function fetchRemoteModels() {
         const next = chip.dataset.selected !== 'true';
         chip.dataset.selected = String(next);
         chip.setAttribute('aria-checked', String(next));
-        chip.firstChild.textContent = next ? '✓' : '○';
+        chip.firstChild.textContent = next ? 'âœ“' : 'â—‹';
       };
       chip.addEventListener('click', toggle);
       chip.addEventListener('keydown', (event) => {
@@ -792,7 +830,7 @@ function syncKindBehaviour() {
       for (const chip of document.querySelectorAll('#provider-models .chip')) {
         chip.dataset.selected = 'true';
         chip.setAttribute('aria-checked', 'true');
-        if (chip.firstChild) chip.firstChild.textContent = '✓';
+        if (chip.firstChild) chip.firstChild.textContent = 'âœ“';
       }
     }
   }
@@ -827,7 +865,7 @@ function renderModelChips(provider) {
       model.contextWindow ? `context ${model.contextWindow}` : null,
       model.maxOutputTokens ? `max out ${model.maxOutputTokens}` : null,
       model.source,
-    ].filter(Boolean).join(' · ');
+    ].filter(Boolean).join(' Â· ');
     const chip = el('span', {
       class: 'chip',
       role: 'checkbox',
