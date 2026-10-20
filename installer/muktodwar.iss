@@ -15,6 +15,8 @@ OutputBaseFilename=MuktoDwar-Setup
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
+UninstallDisplayIcon={app}\muktodwar.exe
+UninstallDisplayName=MuktoDwar
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
