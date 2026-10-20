@@ -31,11 +31,31 @@ jobs:
       - name: Build SEA executable
         run: npm run build:sea
 
+      - name: Assemble app folder
+        shell: pwsh
+        run: |
+          $app = "build/app"
+          New-Item -ItemType Directory -Force -Path $app | Out-Null
+          Copy-Item "build/muktodwar.exe" $app
+          Copy-Item -Recurse "src/ui" "$app/ui"
+          Copy-Item -Recurse "assets" "$app/assets"
+          if (Test-Path "dist") { Copy-Item -Recurse "dist" "$app/dist" }
+
       - name: Build installer (Inno Setup)
         run: |
           choco install innosetup -y
           & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer/muktodwar.iss
         shell: pwsh
+
+      - name: Build MSI (WiX)
+        shell: pwsh
+        run: |
+          choco install wixtoolset -y
+          $env:Path = "C:\Program Files (x86)\WiX Toolset v3.11\bin;" + $env:Path
+          heat dir build/app -cg ProductComponents -gg -scom -sreg -sfrag -srd -dr INSTALLFOLDER -var var.SourceDir -out installer/harvested.wxs
+          candle -dSourceDir=build/app installer/muktodwar.wxs installer/harvested.wxs -out build/
+          light build/muktodwar.wixobj build/harvested.wixobj -out build/installer/MuktoDwar.msi
+          New-Item -ItemType Directory -Force -Path build/installer | Out-Null
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -44,6 +64,7 @@ jobs:
           path: |
             build/muktodwar.exe
             build/installer/*.exe
+            build/installer/*.msi
 
       - name: Compute release tag
         id: tag
@@ -62,4 +83,5 @@ jobs:
           files: |
             build/muktodwar.exe
             build/installer/*.exe
+            build/installer/*.msi
           generate_release_notes: true
