@@ -172,6 +172,19 @@ export async function registerAdminRoutes(
     }
   });
 
+  /** Return security and local-access settings for the admin UI. */
+  app.get('/admin/settings', async (request: FastifyRequest, reply: FastifyReply) => {
+    if (!(await guard(request, reply))) return;
+    const config = deps.getConfig();
+    reply.send({
+      bindHost: config.gateway.host,
+      port: config.gateway.port,
+      localOnly: true,
+      secretCount: deps.secrets.list().length,
+      dpapi: 'ok',
+    });
+  });
+
   /** Return the gateway token for admin-side tooling (e.g. the API playground). */
   app.get('/admin/gateway-token', async (request: FastifyRequest, reply: FastifyReply) => {
     if (!(await guard(request, reply))) return;

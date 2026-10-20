@@ -112,6 +112,9 @@
         <button type="button" role="tab" class="tab" data-tab="playground" aria-label="API Playground" title="API Playground" aria-selected="false" aria-controls="panel-playground">
           <span class="sym" aria-hidden="true">▶</span>
         </button>
+        <button type="button" role="tab" class="tab" data-tab="settings" aria-label="Settings" title="Settings" aria-selected="false" aria-controls="panel-settings">
+          <span class="sym" aria-hidden="true">⚙</span>
+        </button>
       </nav>
 
       <main class="panels">
@@ -291,6 +294,34 @@
               <pre><code id="pg-snippet-opencode"></code></pre>
               <button type="button" class="btn" data-copy="pg-snippet-opencode">Copy</button>
             </div>
+          </div>
+        </section>
+
+        <!-- Settings / Security -->
+        <section id="panel-settings" role="tabpanel" class="panel" hidden aria-labelledby="tab-settings">
+          <div class="panel__head">
+            <h2 aria-label="Security and settings"><span class="sym" aria-hidden="true">⚙</span></h2>
+          </div>
+          <div class="grid-2">
+            <div class="card">
+              <p class="eyebrow">Local access</p>
+              <p><strong>Bind host:</strong> <code id="settings-host">127.0.0.1</code></p>
+              <p><strong>Port:</strong> <code id="settings-port">8787</code></p>
+              <p class="card__body">The gateway refuses to start on any non-loopback address.</p>
+            </div>
+            <div class="card">
+              <p class="eyebrow">Secret storage</p>
+              <p><strong>DPAPI:</strong> <span id="settings-dpapi">unknown</span></p>
+              <p><strong>Stored secrets:</strong> <span id="settings-secrets">0</span></p>
+              <p class="card__body">Secrets are encrypted with Windows DPAPI (CurrentUser scope).</p>
+            </div>
+          </div>
+          <div class="token-row" style="margin-top:12px">
+            <div class="token-row__text">
+              <strong>Reduced motion</strong>
+              <span class="muted">Toggle UI animation. Persisted in this browser.</span>
+            </div>
+            <button type="button" class="btn" id="settings-motion">Toggle</button>
           </div>
         </section>
       </main>

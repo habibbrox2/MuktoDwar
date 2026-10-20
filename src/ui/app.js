@@ -201,6 +201,9 @@ for (const tab of document.querySelectorAll('.tab')) {
     if (name === 'playground') {
       loadPlaygroundModels().then(updateSnippets);
     }
+    if (name === 'settings') {
+      loadSettings();
+    }
   });
 }
 
@@ -245,6 +248,23 @@ async function ensureGatewayToken() {
   pgGatewayToken = data?.token ?? null;
   return pgGatewayToken;
 }
+
+async function loadSettings() {
+  try {
+    const data = await api('/admin/settings');
+    if ($('settings-host')) $('settings-host').textContent = data.bindHost ?? '127.0.0.1';
+    if ($('settings-port')) $('settings-port').textContent = String(data.port ?? 8787);
+    if ($('settings-dpapi')) $('settings-dpapi').textContent = data.dpapi === 'ok' ? 'OK' : 'Unknown';
+    if ($('settings-secrets')) $('settings-secrets').textContent = String(data.secretCount ?? 0);
+  } catch (error) {
+    toast(error.message, 'bad');
+  }
+}
+
+$('settings-motion')?.addEventListener('click', () => {
+  const btn = $('btn-motion');
+  if (btn) btn.click();
+});
 
 async function loadPlaygroundModels() {
   const select = $('pg-model');
