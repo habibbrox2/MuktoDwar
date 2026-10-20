@@ -87,6 +87,30 @@ function toast(message, tone = 'info') {
  * Sign-in
  * ------------------------------------------------------------------ */
 
+async function loadDefaultToken() {
+  try {
+    const data = await api('/admin/default-token');
+    const container = $('gate-default-token');
+    const value = $('gate-default-token-value');
+    if (data?.token) {
+      value.textContent = data.token;
+      container.hidden = false;
+      $('gate-copy-token').addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(data.token);
+          toast('Token copied.', 'ok');
+        } catch {
+          toast('Copy failed. Select the token manually.', 'bad');
+        }
+      });
+    }
+  } catch {
+    // No default token available (rotated or not created yet).
+  }
+}
+
+loadDefaultToken();
+
 $('gate-form').addEventListener('submit', async (event) => {
   event.preventDefault();
   const errorNode = $('gate-error');

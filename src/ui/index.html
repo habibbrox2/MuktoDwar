@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <meta charset="utf-8" />
+    <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="dark light" />
     <title>MuktoDwar — Local AI Gateway</title>
@@ -25,6 +25,15 @@
           <code>node dist/index.js --rotate-admin-token</code>. Lost it? Recover it with
           <code>node dist/index.js --show-admin-token</code>.
         </p>
+        <div id="gate-default-token" class="token-row" hidden>
+          <div class="token-row__text">
+            <strong>Default administrator token</strong>
+            <code id="gate-default-token-value" class="token-output__value"></code>
+          </div>
+          <button type="button" class="btn" id="gate-copy-token" aria-label="Copy token">
+            <span class="sym" aria-hidden="true">⧉</span>
+          </button>
+        </div>
         <label class="field">
           <span class="field__label">Administrator token</span>
           <input

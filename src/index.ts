@@ -13,10 +13,10 @@
  * in plaintext and never returned by an API endpoint.
  */
 
-import { existsSync } from 'node:fs';
+import { existsSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { ConfigStore } from './config/store.js';
-import { ensureStateDir } from './config/paths.js';
+import { ensureStateDir, adminTokenRotatedPath } from './config/paths.js';
 import { HealthTracker } from './providers/health.js';
 import { PowerShellDpapiDriver, assertDpapiScriptUsable, findDpapiScript, findPowerShell } from './security/dpapi.js';
 import { SecretStore } from './security/secret-store.js';
@@ -108,6 +108,7 @@ async function rotateAdminToken(secrets: SecretStore): Promise<void> {
   const token = generateToken(32);
   await secrets.set(deriveSecretId('adt', token), 'admin-token', token, 'Admin token');
   registerSecretValue(token);
+  writeFileSync(adminTokenRotatedPath(), new Date().toISOString(), { mode: 0o600 });
   console.log('');
   console.log('  New administrator token (shown once \u2014 copy it now):');
   console.log(`  ${token}`);

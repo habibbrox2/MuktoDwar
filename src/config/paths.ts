@@ -38,6 +38,11 @@ export function adminTokenPath(): string {
   return join(stateDir(), 'admin-token.txt');
 }
 
+/** Path of the marker written once the admin token has been rotated. */
+export function adminTokenRotatedPath(): string {
+  return join(stateDir(), 'admin-token-rotated');
+}
+
 /** Ensure the state directory exists and is readable. */
 export async function ensureStateDir(): Promise<string> {
   const dir = stateDir();

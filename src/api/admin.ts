@@ -21,6 +21,9 @@ import type { GatewayConfig, ProviderConfig } from '../config/schema.js';
 import { modelEntrySchema, providerConfigSchema } from '../config/schema.js';
 import { PROVIDER_KINDS, catalogFor } from '../providers/catalog.js';
 import { isSameOriginRequest } from '../security/localhost.js';
+import { adminTokenRotatedPath } from '../config/paths.js';
+import { pathExists } from '../config/paths.js';
+import { writeFileSync } from 'node:fs';
 import { deriveSecretId, generateToken } from '../security/auth.js';
 import { sendError } from './routes.js';
 
@@ -130,6 +133,26 @@ export async function registerAdminRoutes(
     deps.sessions.revoke(request.cookies[ADMIN_SESSION_COOKIE]);
     clearAdminSessionCookie(reply);
     reply.send({ ok: true });
+  });
+
+  /** Return the initial admin token until it has been rotated. */
+  app.get('/admin/default-token', async (_request: FastifyRequest, reply: FastifyReply) => {
+    if (await pathExists(adminTokenRotatedPath())) {
+      reply.code(404).send({ error: { message: 'The default admin token is no longer available.', type: 'not_found' } });
+      return;
+    }
+    const adminRecords = deps.secrets.list().filter((record) => record.kind === 'admin-token');
+    const first = adminRecords[0];
+    if (!first) {
+      reply.code(404).send({ error: { message: 'No admin token exists yet.', type: 'not_found' } });
+      return;
+    }
+    const token = await deps.secrets.get(first.id).catch(() => null);
+    if (!token) {
+      reply.code(404).send({ error: { message: 'The admin token could not be read.', type: 'not_found' } });
+      return;
+    }
+    reply.send({ token });
   });
 
   /**
@@ -448,6 +471,7 @@ export async function registerAdminRoutes(
     const existing = deps.secrets.list().find((record) => record.kind === 'admin-token');
     if (existing) await deps.secrets.remove(existing.id);
     await deps.secrets.set(secretId, 'admin-token', token, 'Admin token');
+    writeFileSync(adminTokenRotatedPath(), new Date().toISOString(), { mode: 0o600 });
     // Force re-authentication everywhere.
     reply.send({ token });
   });
