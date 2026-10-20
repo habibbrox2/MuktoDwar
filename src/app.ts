@@ -112,6 +112,12 @@ export async function buildApp(deps: AppDependencies): Promise<GatewayApp> {
     prefix: '/ui/',
     index: false,
   });
+  await app.register(fastifyStatic, {
+    root: resolve(process.cwd(), 'assets', 'brand'),
+    prefix: '/brand/',
+    index: false,
+    decorateReply: false,
+  });
 
   // The admin shell is read once at startup and served from memory.
   const shell = await readFile(join(uiDir, 'index.html'), 'utf8').catch(() => null);

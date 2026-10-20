@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="bn">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MuktoDwar (মুক্তদ্বার) — Open Gateway for Distributed Systems</title>
+  <meta name="description" content="MuktoDwar (মুক্তদ্বার) — a lightweight, secure, local-only AI gateway for Windows with an OpenAI-compatible API and free-model-only routing." />
+  <meta name="theme-color" content="#0D1117" />
+  <link rel="icon" type="image/svg+xml" href="assets/brand/muktodwar-favicon.svg" />
+  <link rel="alternate icon" href="assets/brand/favicon.ico" sizes="any" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Hind+Siliguri:wght@400;600;700&family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/site.css" />
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="wrap site-header__inner">
+      <a class="brand" href="#top">
+        <img class="brand__mark glow" src="assets/brand/muktodwar-mark.svg" alt="" width="30" height="30" />
+        <span>Mukto<span class="brand__accent">Dwar</span></span>
+      </a>
+
+      <nav class="header-nav">
+        <a href="#logos">লোগো</a>
+        <a href="#features">ফিচার</a>
+        <a href="#quickstart">Quick start</a>
+        <a href="#brand">ব্র্যান্ড</a>
+        <a href="https://github.com/habibbrox2/MuktoDwar">GitHub</a>
+        <span class="chip">v1.0</span>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+
+    <!-- ================= HERO ================= -->
+    <section class="hero grid-pattern">
+      <div class="wrap hero__inner">
+        <img class="hero__logo glow" src="assets/brand/muktodwar-logo-dark.svg" alt="MuktoDwar (মুক্তদ্বার)" width="520" height="160" />
+
+        <h1>
+          মুক্তদ্বার <span>— Open Gateway</span>
+        </h1>
+
+        <p class="hero__lead">
+          সংযুক্ত নোড, হাই-পারফরম্যান্স নেটওয়ার্ক ও সিকিউর গেটওয়ের একটি ডিজাইন সিস্টেম।
+          A lightweight, <strong>local-only</strong>, <strong>free-model-only</strong> AI gateway for Windows
+          with an OpenAI-compatible API.
+        </p>
+
+        <div class="hero__actions">
+          <a class="btn btn--primary" href="https://github.com/habibbrox2/MuktoDwar">View on GitHub</a>
+          <a class="btn" href="https://github.com/habibbrox2/MuktoDwar/blob/main/docs/providers.md">Provider matrix</a>
+          <a class="btn" href="https://github.com/habibbrox2/MuktoDwar/blob/main/README.md">README</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= 1. LOGOS ================= -->
+    <section class="section" id="logos">
+      <div class="wrap">
+        <div class="section__head">
+          <h2>১. লোগো ভ্যারিয়েন্ট ও থিম</h2>
+          <p>Logo Variants · Dark / Light / Mark</p>
+        </div>
+
+        <div class="showcase">
+          <div class="showcase__item showcase__item--dark grid-pattern">
+            <div class="showcase__label">
+              <span class="showcase__tag">Primary Dark</span>
+              <span class="showcase__meta">#0D1117 base</span>
+            </div>
+            <div class="showcase__stage">
+              <img src="assets/brand/muktodwar-logo-dark.svg" alt="MuktoDwar primary dark logo" width="520" height="160" />
+            </div>
+          </div>
+
+          <div class="showcase__item showcase__item--light">
+            <div class="showcase__label">
+              <span class="showcase__tag">Primary Light</span>
+              <span class="showcase__meta">#F6F8FA base</span>
+            </div>
+            <div class="showcase__stage">
+              <img src="assets/brand/muktodwar-logo-light.svg" alt="MuktoDwar primary light logo" width="520" height="160" />
+            </div>
+          </div>
+
+          <div class="showcase__item showcase__item--dark grid-pattern">
+            <div class="showcase__label">
+              <span class="showcase__tag">Gateway Mark</span>
+              <span class="showcase__meta">Square · 240×240</span>
+            </div>
+            <div class="showcase__stage showcase__stage--square">
+              <img class="glow" src="assets/brand/muktodwar-mark.svg" alt="MuktoDwar gateway mark" width="240" height="240" />
+            </div>
+          </div>
+
+          <div class="showcase__item showcase__item--light">
+            <div class="showcase__label">
+              <span class="showcase__tag">Favicon</span>
+              <span class="showcase__meta">32×32 · App icon</span>
+            </div>
+            <div class="showcase__stage showcase__stage--tiny">
+              <img src="assets/brand/muktodwar-favicon.svg" alt="MuktoDwar favicon" width="32" height="32" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= 2. FEATURES ================= -->
+    <section class="section" id="features">
+      <div class="wrap">
+        <div class="section__head">
+          <h2>২. ফিচার ও কেন</h2>
+          <p>What it does</p>
+        </div>
+
+        <div class="grid-3">
+          <div class="card">
+            <h3 class="card__title">🖥️ Local only</h3>
+            <p class="card__body">
+              Binds to <code>127.0.0.1</code> and refuses to start on any other address.
+              No cloud account, no external hosting, no telemetry, no auto-updates.
+            </p>
+          </div>
+          <div class="card">
+            <h3 class="card__title">🔌 OpenAI-compatible</h3>
+            <p class="card__body">
+              Works unchanged with the official OpenAI SDKs, OpenCode, PHP, JavaScript and
+              anything that speaks <code>POST /v1/chat/completions</code>.
+            </p>
+          </div>
+          <div class="card">
+            <h3 class="card__title">🔀 Hybrid router</h3>
+            <p class="card__body">
+              Combines your priority order, measured latency (EWMA), provider health,
+              cooldown and circuit breaking.
+            </p>
+          </div>
+          <div class="card">
+            <h3 class="card__title">🆓 Free-only</h3>
+            <p class="card__body">
+              Providers ship <strong>disabled</strong>; models must be explicitly allowlisted
+              and marked free by you. There is no paid fallback path in the code.
+            </p>
+          </div>
+          <div class="card">
+            <h3 class="card__title">🔐 DPAPI secrets</h3>
+            <p class="card__body">
+              API keys encrypted at rest with Windows DPAPI <code>CurrentUser</code> scope —
+              never plaintext, fail-closed on any error.
+            </p>
+          </div>
+          <div class="card">
+            <h3 class="card__title">📡 Streaming</h3>
+            <p class="card__body">
+              SSE with backpressure, streamed straight through without buffering the
+              upstream response.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= 3. QUICK START ================= -->
+    <section class="section" id="quickstart">
+      <div class="wrap">
+        <div class="section__head">
+          <h2>৩. দ্রুত শুরু</h2>
+          <p>Quick start</p>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <p class="eyebrow">Install &amp; run</p>
+            <pre><code>npm ci          # reproducible install
+npm run verify  # typecheck + tests + build
+npm start       # serves on http://127.0.0.1:8787</code></pre>
+          </div>
+
+          <div class="card">
+            <p class="eyebrow">Call the gateway</p>
+            <pre><code>curl http://127.0.0.1:8787/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $GATEWAY_TOKEN" \
+  -d '{"model":"llama-3.3-70b-versatile",
+       "messages":[{"role":"user","content":"Hello!"}]}'</code></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= 4. FREE-ONLY ================= -->
+    <section class="section" id="free-only">
+      <div class="wrap">
+        <div class="section__head">
+          <h2>৪. ফ্রি-অনলি নিশ্চয়তা</h2>
+          <p>How free-only is enforced</p>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <ul class="checklist">
+              <li><span><strong>Explicit flags.</strong> <code>free</code> and <code>verified</code> are required booleans — nothing is inferred.</span></li>
+              <li><span><strong>Disabled by default.</strong> Every provider ships with <code>enabled: false</code>.</span></li>
+              <li><span><strong>One choke point.</strong> <code>Router.candidates()</code> skips anything not marked free.</span></li>
+              <li><span><strong>Bounded attempts.</strong> <code>maxAttempts</code> defaults to 3 and is capped at 5.</span></li>
+            </ul>
+          </div>
+
+          <div class="card">
+            <p class="eyebrow">Endpoints</p>
+            <table class="table">
+              <thead>
+                <tr><th>Method</th><th>Path</th><th>Auth</th></tr>
+              </thead>
+              <tbody>
+                <tr><td><code>GET</code></td><td><code>/health</code></td><td>none</td></tr>
+                <tr><td><code>GET</code></td><td><code>/v1/models</code></td><td>gateway token</td></tr>
+                <tr><td><code>POST</code></td><td><code>/v1/chat/completions</code></td><td>gateway token</td></tr>
+                <tr><td><code>POST</code></td><td><code>/v1/embeddings</code></td><td>gateway token</td></tr>
+                <tr><td><code>POST</code></td><td><code>/v1/images/generations</code></td><td>gateway token</td></tr>
+                <tr><td><code>POST</code></td><td><code>/v1/responses</code></td><td>gateway token</td></tr>
+                <tr><td><code>*</code></td><td><code>/admin/*</code></td><td>admin token</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= 5. BRAND SHEET ================= -->
+    <section class="section" id="brand">
+      <div class="wrap">
+        <div class="section__head">
+          <h2>৫. ব্র্যান্ড গাইডলাইন ও কালার প্যালেট</h2>
+          <p>Brand Sheet</p>
+        </div>
+
+        <div class="grid-4">
+          <div class="swatch">
+            <div class="swatch__chip" style="background:#8A2BE2"><span class="swatch__hex">#8A2BE2</span></div>
+            <div class="swatch__meta">
+              <h4>Vibrant Violet</h4>
+              <p>Primary brand accent · nodes &amp; glow</p>
+            </div>
+          </div>
+          <div class="swatch">
+            <div class="swatch__chip" style="background:#0077FF"><span class="swatch__hex">#0077FF</span></div>
+            <div class="swatch__meta">
+              <h4>Electric Blue</h4>
+              <p>Secondary gateway accent</p>
+            </div>
+          </div>
+          <div class="swatch">
+            <div class="swatch__chip" style="background:#0D1117"><span class="swatch__hex">#0D1117</span></div>
+            <div class="swatch__meta">
+              <h4>Dark Base</h4>
+              <p>Background &amp; main container</p>
+            </div>
+          </div>
+          <div class="swatch">
+            <div class="swatch__chip" style="background:#00B4D8"><span class="swatch__hex">#00B4D8</span></div>
+            <div class="swatch__meta">
+              <h4>Cyan Highlight</h4>
+              <p>Active node &amp; success status</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="type-row" style="margin-top:18px">
+          <div class="card">
+            <p class="eyebrow">Primary UI font</p>
+            <p style="margin:0;font-size:26px;font-weight:700">Inter / Hind Siliguri</p>
+            <p class="card__body" style="margin-top:6px">
+              UI বোতাম, শিরোনাম এবং বাংলা টেক্সট প্রদর্শনীর জন্য ব্যবহৃত টাইপফেস।
+            </p>
+          </div>
+          <div class="card">
+            <p class="eyebrow" style="color:#4DA3FF">Code &amp; terminal font</p>
+            <p style="margin:0;font-size:26px;font-weight:700;font-family:var(--font-mono)">Fira Code</p>
+            <p class="card__body" style="margin-top:6px">
+              API রেসপন্স, কনফিগারেশন ফাইল এবং টার্মিনাল আউটপুটের জন্য সংকেত।
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap site-footer__inner">
+      <span>MuktoDwar (মুক্তদ্বার) — Open Gateway Design System &amp; Assets Showcase</span>
+      <span>
+        <a href="https://github.com/habibbrox2/MuktoDwar">Source</a> ·
+        <a href="https://github.com/habibbrox2/MuktoDwar/blob/main/SECURITY.md">Security</a> ·
+        <a href="https://github.com/habibbrox2/MuktoDwar/blob/main/LICENSE">License</a>
+      </span>
+    </div>
+  </footer>
+
+</body>
+</html>

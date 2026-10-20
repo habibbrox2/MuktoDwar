@@ -2,7 +2,7 @@
   "name": "mukto-dwar",
   "version": "1.0.0",
   "private": true,
-  "description": "MuktoDwar (\u09ae\u09c1\u0995\u09cd\u09a4\u09a6\u09cd\u09ac\u09be\u09b0) \u2014 lightweight, free-only, local AI gateway for Windows with an OpenAI-compatible API.",
+  "description": "MuktoDwar (মুক্তদ্বার) — lightweight, free-only, local AI gateway for Windows with an OpenAI-compatible API.",
   "type": "module",
   "engines": {
     "node": ">=22.12.0"
@@ -14,7 +14,10 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "verify": "npm run typecheck && npm run test && npm run build"
+    "verify": "npm run typecheck && npm run test && npm run build",
+    "brand:build": "node scripts/generate-brand-assets.mjs",
+    "site:build": "node scripts/build-site.mjs",
+    "site:serve": "node scripts/build-site.mjs --serve"
   },
   "dependencies": {
     "@fastify/cookie": "^11.1.3",
@@ -24,6 +27,7 @@
   },
   "devDependencies": {
     "@types/node": "^26.6.5",
+    "sharp": "^0.35.5",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2",
     "vitest": "^5.0.5"

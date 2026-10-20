@@ -1,8 +1,29 @@
 # MuktoDwar
 
+![MuktoDwar — Your Local Gateway to AI](assets/brand/muktodwar-github-banner.png)
+
 **MuktoDwar** (মুক্তদ্বার, *free gate*) is a lightweight, secure, **local-only** AI gateway for Windows. It exposes an **OpenAI-compatible API** on `127.0.0.1:8787` and routes requests across multiple **explicitly allowlisted free** AI providers and multiple API keys per provider.
 
 **Free-only by construction.** There is no code path that can route to a model you have not allowlisted, and no code path that can fall back to a paid model.
+
+## Brand assets
+
+MuktoDwar uses the **Open Gateway** identity: a neon open door with connected routing nodes, on a dark navy canvas. See the complete [brand guide](docs/brand/muktodwar-brand-guide.md).
+
+| Asset | Intended use |
+|---|---|
+| [`muktodwar-logo-dark.svg`](assets/brand/muktodwar-logo-dark.svg) | README, dark navbars, and splash screens |
+| [`muktodwar-logo-light.svg`](assets/brand/muktodwar-logo-light.svg) | Light surfaces |
+| [`muktodwar-mark.svg`](assets/brand/muktodwar-mark.svg) | Compact UI, app, and tray contexts |
+| [`muktodwar.ico`](assets/brand/muktodwar.ico) | Windows application icon |
+| [`muktodwar-favicon.svg`](assets/brand/muktodwar-favicon.svg) | Browser favicon |
+| [`muktodwar-github-banner.png`](assets/brand/muktodwar-github-banner.png) | GitHub repository/social preview |
+
+Regenerate binary derivatives after changing the master generator:
+
+```powershell
+npm run brand:build
+```
 
 ---
 
