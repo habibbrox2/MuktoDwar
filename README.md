@@ -414,3 +414,12 @@ npm run build:sea
 `
 
 The executable is written to uild/muktodwar.exe. Run the installer script with Inno Setup to produce uild/installer/MuktoDwar-Setup.exe.
+
+## Releases
+
+Windows builds are published automatically via GitHub Actions on every push to main and on version tags.
+
+- **Latest release:** https://github.com/habibbrox2/MuktoDwar/releases/latest
+- **All releases:** https://github.com/habibbrox2/MuktoDwar/releases
+
+Each release includes a single-file muktodwar.exe and an Inno Setup installer MuktoDwar-Setup.exe.
