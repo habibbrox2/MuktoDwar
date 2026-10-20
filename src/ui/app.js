@@ -52,6 +52,25 @@ async function api(path, options = {}) {
 
 const $ = (id) => document.getElementById(id);
 
+function trapFocus(dialog) {
+  if (!dialog) return;
+  dialog.addEventListener('keydown', (event) => {
+    if (event.key !== 'Tab') return;
+    const focusable = [...dialog.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')]
+      .filter((el) => !el.hasAttribute('disabled') && el.offsetParent !== null);
+    if (focusable.length === 0) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  });
+}
+
 function el(tag, props = {}, children = []) {
   const node = document.createElement(tag);
   for (const [key, value] of Object.entries(props)) {
@@ -147,6 +166,9 @@ async function loadDefaultToken() {
     // No default token available (rotated or not created yet).
   }
 }
+
+trapFocus($('provider-dialog'));
+trapFocus($('confirm-dialog'));
 
 loadDefaultToken();
 
@@ -348,6 +370,12 @@ $('pg-send')?.addEventListener('click', async () => {
   } catch (error) {
     if (error.name !== 'AbortError') output.textContent += `\\nError: ${error.message}`;
   } finally {
+    const prompt = $('pg-message').value.trim();
+    if (prompt && !pgHistory.includes(prompt)) {
+      pgHistory.push(prompt);
+      if (pgHistory.length > 8) pgHistory.shift();
+      refreshPgHistory();
+    }
     pgAbort = null;
     $('pg-cancel').hidden = true;
     $('pg-send').disabled = false;
@@ -376,6 +404,24 @@ document.querySelectorAll('[data-copy]').forEach((btn) => {
 // Load playground models after entering console
 const _origEnterConsole = enterConsole;
 // hook not needed; call in refreshAll? Instead load on first tab click.
+
+// Playground prompt history (in-memory, lightweight).
+const pgHistory = [];
+const pgHistorySelect = $('pg-history');
+function refreshPgHistory() {
+  if (!pgHistorySelect) return;
+  pgHistorySelect.replaceChildren(el('option', { value: '', text: '— select a previous prompt —' }));
+  for (const prompt of pgHistory.slice().reverse()) {
+    pgHistorySelect.append(el('option', { value: prompt, text: prompt.slice(0, 60) }));
+  }
+}
+pgHistorySelect?.addEventListener('change', () => {
+  const value = pgHistorySelect.value;
+  if (value) $('pg-message').value = value;
+});
+
+// push to history on send (wrap pg-send handler already defined; add push in finally)
+const _origPgSend = null;
 
 function render() {
   renderStatusBar();
