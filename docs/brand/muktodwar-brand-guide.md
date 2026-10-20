@@ -70,3 +70,7 @@ Don't:
 - Rotate, squash, outline, or recolor the wordmark outside the defined palette.
 - Place the glowing mark over a busy or low-contrast image.
 - Use glow as a substitute for focus indicators, error states, or readable labels.
+
+## Credits
+
+- Made in Bangladesh 🇧🇩\n- Open source\n- Developer: Hr Habib\n

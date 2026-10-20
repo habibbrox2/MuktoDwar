@@ -423,3 +423,6 @@ Windows builds are published automatically via GitHub Actions on every push to m
 - **All releases:** https://github.com/habibbrox2/MuktoDwar/releases
 
 Each release includes:\n- muktodwar.exe — single-file executable\n- MuktoDwar-Setup.exe — Inno Setup installer\n- MuktoDwar.msi — Windows Installer package\n\nFull A-to-Z guide: [docs/deployment/windows-build-release.md](docs/deployment/windows-build-release.md).\n
+## Credits
+
+- **Made in Bangladesh** 🇧🇩\n- **Open Source** — MIT License\n- **Developer:** Hr Habib\n- GitHub: https://github.com/habibbrox2\n
