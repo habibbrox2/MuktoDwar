@@ -556,6 +556,7 @@ body {
     radial-gradient(760px 460px at 4% -12%, rgb(124 58 237 / .24), transparent 66%),
     radial-gradient(620px 400px at 103% 10%, rgb(56 130 246 / .18), transparent 68%),
     var(--bg);
+  text-wrap: pretty;
 }
 
 .gate {
@@ -690,7 +691,15 @@ body {
   background: linear-gradient(145deg, rgb(20 30 50 / .78), rgb(10 16 28 / .88));
 }
 
-.row { box-shadow: inset 0 1px 0 rgb(226 232 240 / .025); }
+.row {
+  box-shadow: inset 0 1px 0 rgb(226 232 240 / .025);
+  transition: transform .12s ease, border-color .12s ease, box-shadow .12s ease;
+}
+.row:hover {
+  transform: translateY(-1px);
+  border-color: rgb(96 130 200 / .7);
+  box-shadow: inset 0 1px 0 rgb(226 232 240 / .04), 0 6px 18px rgb(0 0 0 / .18);
+}
 .row__icon { background: rgb(8 14 25 / .72); color: #91b7ff; }
 
 .btn,
