@@ -6,6 +6,8 @@
 
 **Free-only by construction.** There is no code path that can route to a model you have not allowlisted, and no code path that can fall back to a paid model.
 
+**Live site (GitHub Pages):** https://habibbrox2.github.io/MuktoDwar/
+
 ## Brand assets
 
 MuktoDwar uses the **Open Gateway** identity: a neon open door with connected routing nodes, on a dark navy canvas. See the complete [brand guide](docs/brand/muktodwar-brand-guide.md).
