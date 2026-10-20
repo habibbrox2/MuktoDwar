@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark light" />
+    <title>Local AI Gateway</title>
+    <link rel="stylesheet" href="/ui/styles.css" />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>◇</text></svg>" />
+  </head>
+  <body>
+    <!-- Sign-in panel: the token is exchanged for an httpOnly cookie, so it
+         never touches browser storage. -->
+    <div id="gate" class="gate" role="dialog" aria-modal="true" aria-labelledby="gate-title">
+      <form id="gate-form" class="gate__card" autocomplete="off">
+        <h1 id="gate-title" class="gate__title">
+          <span class="sym" aria-hidden="true">◈</span>
+          <span>Local AI Gateway</span>
+        </h1>
+        <p class="gate__hint">
+          The administrator token was printed in the gateway console when it started.
+        </p>
+        <label class="field">
+          <span class="field__label">Administrator token</span>
+          <input
+            id="token"
+            name="token"
+            type="password"
+            class="field__input"
+            autocomplete="current-password"
+            spellcheck="false"
+            required
+          />
+        </label>
+        <p id="gate-error" class="gate__error" role="alert" hidden></p>
+        <button type="submit" class="btn btn--primary" id="gate-submit" aria-label="Unlock">
+          <span class="sym" aria-hidden="true">→</span>
+        </button>
+      </form>
+    </div>
+
+    <!-- Main console. -->
+    <div id="console" class="console" hidden>
+      <header class="topbar">
+        <h1 class="topbar__brand">
+          <span class="sym sym--brand" aria-hidden="true">◈</span>
+          <span>Local AI Gateway</span>
+        </h1>
+
+        <div class="topbar__status" role="status" aria-live="polite">
+          <span class="pill" id="pill-server" title="Gateway process">
+            <span class="sym" aria-hidden="true">◇</span>
+            <span class="pill__text" id="pill-server-text">connecting</span>
+          </span>
+          <span class="pill" id="pill-providers" title="Enabled providers">
+            <span class="sym" aria-hidden="true">⬢</span>
+            <span class="pill__text" id="pill-providers-text">0</span>
+          </span>
+          <span class="pill" id="pill-models" title="Free models available">
+            <span class="sym" aria-hidden="true">❖</span>
+            <span class="pill__text" id="pill-models-text">0</span>
+          </span>
+        </div>
+
+        <div class="topbar__actions">
+          <button type="button" class="icon-btn" id="btn-refresh" title="Refresh" aria-label="Refresh">
+            <span class="sym" aria-hidden="true">⟳</span></button>
+          <button type="button" class="icon-btn" id="btn-lock" title="Lock" aria-label="Lock">
+            <span class="sym" aria-hidden="true">⏻</span></button>
+        </div>
+      </header>
+
+      <!-- Symbol-only navigation: the glyph is the visible label, so the
+           accessible name lives on aria-label and the mouse hint on title.
+           app.js addresses tabs by data-tab, never by their text. -->
+      <nav class="tabs" role="tablist" aria-label="Sections">
+        <button type="button" role="tab" class="tab" data-tab="providers" aria-label="Providers" title="Providers" aria-selected="true" aria-controls="panel-providers">
+          <span class="sym" aria-hidden="true">⬢</span>
+        </button>
+        <button type="button" role="tab" class="tab" data-tab="models" aria-label="Models" title="Models" aria-selected="false" aria-controls="panel-models">
+          <span class="sym" aria-hidden="true">❖</span>
+        </button>
+        <button type="button" role="tab" class="tab" data-tab="routing" aria-label="Routing" title="Routing" aria-selected="false" aria-controls="panel-routing">
+          <span class="sym" aria-hidden="true">⇄</span>
+        </button>
+        <button type="button" role="tab" class="tab" data-tab="status" aria-label="Status" title="Status" aria-selected="false" aria-controls="panel-status">
+          <span class="sym" aria-hidden="true">◴</span>
+        </button>
+        <button type="button" role="tab" class="tab" data-tab="tokens" aria-label="Tokens" title="Tokens" aria-selected="false" aria-controls="panel-tokens">
+          <span class="sym" aria-hidden="true">⚿</span>
+        </button>
+      </nav>
+
+      <main class="panels">
+        <!-- Providers -->
+        <section id="panel-providers" role="tabpanel" class="panel" aria-labelledby="tab-providers">
+          <div class="panel__head">
+            <h2 aria-label="Providers"><span class="sym" aria-hidden="true">⬢</span></h2>
+            <button type="button" class="btn btn--primary" id="btn-add-provider" aria-label="Add provider">
+              <span class="sym" aria-hidden="true">✚</span>
+            </button>
+          </div>
+          <p class="panel__note">
+            Every provider ships disabled with an empty allowlist. A model becomes usable only
+            when it is marked free and allowlisted.
+          </p>
+          <ul class="list" id="provider-list"></ul>
+          <p class="empty" id="providers-empty" hidden>No providers configured yet.</p>
+        </section>
+
+        <!-- Models -->
+        <section id="panel-models" role="tabpanel" class="panel" hidden aria-labelledby="tab-models">
+          <div class="panel__head">
+            <h2 aria-label="Free model allowlist"><span class="sym" aria-hidden="true">✚</span></h2>
+          </div>
+          <p class="panel__note">
+            The gateway will only ever route to a model listed here with a free status confirmed.
+          </p>
+          <ul class="list" id="model-list"></ul>
+          <p class="empty" id="models-empty" hidden>No free models allowlisted yet.</p>
+        </section>
+
+        <!-- Routing -->
+        <section id="panel-routing" role="tabpanel" class="panel" hidden aria-labelledby="tab-routing">
+          <div class="panel__head">
+            <h2 aria-label="Routing"><span class="sym" aria-hidden="true">⇄</span></h2>
+            <button type="button" class="btn btn--primary" id="btn-save-routing" aria-label="Save">
+              <span class="sym" aria-hidden="true">✓</span>
+            </button>
+          </div>
+          <div class="grid">
+            <label class="field">
+              <span class="field__label">Strategy</span>
+              <select id="routing-mode" class="field__input">
+                <option value="hybrid">Hybrid</option>
+                <option value="priority">Priority only</option>
+                <option value="latency">Latency only</option>
+              </select>
+            </label>
+            <label class="field">
+              <span class="field__label">Default model</span>
+              <input id="routing-default" class="field__input" spellcheck="false" placeholder="none" />
+            </label>
+            <label class="field">
+              <span class="field__label">Max attempts</span>
+              <input id="routing-attempts" class="field__input" type="number" min="1" max="5" />
+            </label>
+            <label class="field">
+              <span class="field__label">Cooldown (ms)</span>
+              <input id="routing-cooldown" class="field__input" type="number" min="1000" step="1000" />
+            </label>
+            <label class="field">
+              <span class="field__label">Priority weight</span>
+              <input id="weight-priority" class="field__input" type="number" min="0" max="10" step="0.5" />
+            </label>
+            <label class="field">
+              <span class="field__label">Latency weight</span>
+              <input id="weight-latency" class="field__input" type="number" min="0" max="10" step="0.5" />
+            </label>
+            <label class="field">
+              <span class="field__label">Health weight</span>
+              <input id="weight-health" class="field__input" type="number" min="0" max="10" step="0.5" />
+            </label>
+          </div>
+        </section>
+
+        <!-- Status -->
+        <section id="panel-status" role="tabpanel" class="panel" hidden aria-labelledby="tab-status">
+          <div class="panel__head">
+            <h2 aria-label="Runtime status"><span class="sym" aria-hidden="true">◴</span></h2>
+          </div>
+          <div class="table-wrap">
+            <table class="table">
+              <caption class="sr-only">Provider health, latency and failure state</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Provider</th>
+                  <th scope="col">Key</th>
+                  <th scope="col">State</th>
+                  <th scope="col">Latency</th>
+                  <th scope="col">Success</th>
+                  <th scope="col">Fail</th>
+                </tr>
+              </thead>
+              <tbody id="status-body"></tbody>
+            </table>
+          </div>
+          <p class="empty" id="status-empty" hidden>No provider has been contacted yet.</p>
+        </section>
+
+        <!-- Tokens -->
+        <section id="panel-tokens" role="tabpanel" class="panel" hidden aria-labelledby="tab-tokens">
+          <div class="panel__head">
+            <h2 aria-label="Tokens"><span class="sym" aria-hidden="true">⚿</span></h2>
+          </div>
+          <p class="panel__note">
+            A new token is displayed once, immediately after it is generated. It is stored
+            encrypted and can never be read back.
+          </p>
+          <div class="token-row">
+            <div class="token-row__text">
+              <strong>Gateway token</strong>
+              <span class="muted">Sent by clients as <code>Authorization: Bearer &lt;token&gt;</code>.</span>
+            </div>
+            <button type="button" class="btn" id="btn-rotate-gateway" aria-label="Rotate">
+              <span class="sym" aria-hidden="true">⟳</span>
+            </button>
+          </div>
+          <div class="token-row">
+            <div class="token-row__text">
+              <strong>Administrator token</strong>
+              <span class="muted">Unlocks this console. Rotating it ends every active session.</span>
+            </div>
+            <button type="button" class="btn" id="btn-rotate-admin" aria-label="Rotate admin">
+              <span class="sym" aria-hidden="true">⟳</span>
+            </button>
+          </div>
+          <div id="token-output" class="token-output" hidden>
+            <p class="token-output__label">Copy this now. It will not be shown again.</p>
+            <code id="token-output-value" class="token-output__value"></code>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <!-- Provider editor -->
+    <dialog id="provider-dialog" class="dialog">
+      <form id="provider-form" method="dialog" class="dialog__card" autocomplete="off">
+        <h2 id="provider-dialog-title" class="dialog__title"><span class="sym" aria-hidden="true">✚</span></h2>
+
+        <label class="field" aria-label="Provider">
+          <span class="field__label" aria-hidden="true">✎</span>
+          <select id="provider-kind" class="field__input"></select>
+        </label>
+
+        <label class="field" aria-label="Label">
+          <span class="field__label" aria-hidden="true">✎</span>
+          <input id="provider-label" class="field__input" required />
+        </label>
+
+        <label class="field" aria-label="Identifier">
+          <span class="field__label" aria-hidden="true">✎</span>
+          <input id="provider-id" class="field__input" required spellcheck="false" />
+        </label>
+
+        <label class="field" aria-label="API key">
+          <span class="field__label" aria-hidden="true">𔓟</span>
+          <input id="provider-key" class="field__input" type="password" spellcheck="false" placeholder="stored encrypted" />
+          <span class="field__hint">Leave blank to keep the existing key.</span>
+        </label>
+
+        <label class="field" aria-label="Priority">
+          <span class="field__label" aria-hidden="true">↑</span>
+          <input id="provider-priority" class="field__input" type="number" min="0" max="1000" value="100" />
+        </label>
+
+        <label class="checkbox" aria-label="Enabled">
+          <input id="provider-enabled" type="checkbox" />
+          <span class="field__label" aria-hidden="true">✓</span>
+        </label>
+
+        <label class="checkbox" aria-label="Send no key (anonymous free access)">
+          <input id="provider-anonymous" type="checkbox" />
+          <span class="field__label" aria-hidden="true">🔓</span>
+        </label>
+
+        <fieldset class="fieldset">
+          <legend>Free model allowlist</legend>
+          <div id="provider-models" class="chips"></div>
+          <p class="field__hint">
+            Only models marked free can be selected. Unverified models are shown with a warning.
+          </p>
+        </fieldset>
+
+        <div class="dialog__actions">
+          <button type="button" class="btn" id="provider-cancel" aria-label="Cancel">
+          <span class="sym" aria-hidden="true">✗</span>
+        </button>
+          <button type="submit" class="btn btn--primary" id="provider-save" aria-label="Save">
+            <span class="sym" aria-hidden="true">✓</span>
+          </button>
+        </div>
+      </form>
+    </dialog>
+
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+    <script type="module" src="/ui/app.js"></script>
+  </body>
+</html>
