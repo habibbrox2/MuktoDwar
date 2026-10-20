@@ -32,7 +32,7 @@ body {
 }
 
 .sym {
-  font-family: var(--mono);
+  font-family: "Segoe UI Symbol", "Apple Symbols", "Noto Sans Symbols", "Noto Sans Symbols 2", var(--mono);
   line-height: 1;
   display: inline-block;
 }
