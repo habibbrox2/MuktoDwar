@@ -55,6 +55,10 @@ It generates a **gateway token** and an **admin token**. The admin token is prin
 ```powershell
 # If you lose the admin token later, recover it deliberately:
 node dist/index.js --show-admin-token
+
+# Replace it — the new token is printed once, the old one stops working.
+# The same rotation is available in the dashboard (Tokens section).
+node dist/index.js --rotate-admin-token
 ```
 
 ---
@@ -69,6 +73,7 @@ POST /admin/providers        # add a provider
 POST /admin/providers/:id/models   # allowlist a model
 PUT  /admin/routing          # priority weights, max attempts, default model
 POST /admin/tokens/gateway/rotate   # rotate the client token
+POST /admin/tokens/admin/rotate     # replace the admin token (shown once)
 POST /admin/session          # exchange admin token for a session cookie
 DELETE /admin/session        # sign out
 ```

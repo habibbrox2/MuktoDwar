@@ -18,7 +18,11 @@
           <span>Local AI Gateway</span>
         </h1>
         <p class="gate__hint">
-          The administrator token was printed in the gateway console when it started.
+          The administrator token is created automatically on first run and printed once in
+          the gateway console. It stays valid until you rotate it — from the Tokens section
+          after signing in, or with
+          <code>node dist/index.js --rotate-admin-token</code>. Lost it? Recover it with
+          <code>node dist/index.js --show-admin-token</code>.
         </p>
         <label class="field">
           <span class="field__label">Administrator token</span>

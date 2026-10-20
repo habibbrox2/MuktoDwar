@@ -501,5 +501,51 @@ describe('public API', () => {
       });
       expect(response.statusCode).toBe(200);
     });
+
+    it('rejects an unauthenticated admin token rotation', async () => {
+      const { ctx } = await buildConfiguredApp([provider({ id: 'p1' })]);
+      const response = await ctx.app.app.inject({
+        method: 'POST',
+        url: '/admin/tokens/admin/rotate',
+      });
+      expect(response.statusCode).toBe(401);
+    });
+
+    it('rotates the admin token, invalidating the old one and keeping the new one', async () => {
+      const { ctx } = await buildConfiguredApp([provider({ id: 'p1' })]);
+
+      const rotate = await ctx.app.app.inject({
+        method: 'POST',
+        url: '/admin/tokens/admin/rotate',
+        headers: adminHeaders,
+      });
+      expect(rotate.statusCode).toBe(200);
+      const { token } = rotate.json() as { token: string };
+      expect(token).not.toBe(ADMIN_TOKEN);
+      expect(token.length).toBeGreaterThan(30);
+
+      // The old token must stop working immediately.
+      const withOld = await ctx.app.app.inject({
+        method: 'GET',
+        url: '/admin/status',
+        headers: adminHeaders,
+      });
+      expect(withOld.statusCode).toBe(401);
+
+      // The new token must work, and keep working across later requests.
+      const newHeaders = { authorization: `Bearer ${token}` };
+      const first = await ctx.app.app.inject({
+        method: 'GET',
+        url: '/admin/status',
+        headers: newHeaders,
+      });
+      expect(first.statusCode).toBe(200);
+      const second = await ctx.app.app.inject({
+        method: 'GET',
+        url: '/admin/status',
+        headers: newHeaders,
+      });
+      expect(second.statusCode).toBe(200);
+    });
   });
 });

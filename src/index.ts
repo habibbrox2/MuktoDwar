@@ -95,6 +95,25 @@ async function showExistingAdminToken(secrets: SecretStore): Promise<void> {
   console.log(token);
 }
 
+/**
+ * Replace the administrator token, printing the new value exactly once.
+ *
+ * The previous token stops working immediately. The new token stays valid
+ * until it is rotated again — from this command or from the admin dashboard
+ * (Tokens section). Nothing is written to disk in plaintext.
+ */
+async function rotateAdminToken(secrets: SecretStore): Promise<void> {
+  const existing = secrets.list().find((record) => record.kind === 'admin-token');
+  if (existing) await secrets.remove(existing.id);
+  const token = generateToken(32);
+  await secrets.set(deriveSecretId('adt', token), 'admin-token', token, 'Admin token');
+  registerSecretValue(token);
+  console.log('');
+  console.log('  New administrator token (shown once \u2014 copy it now):');
+  console.log(`  ${token}`);
+  console.log('');
+}
+
 /** Start the gateway. */
 async function main(): Promise<void> {
   await ensureStateDir();
@@ -108,6 +127,15 @@ async function main(): Promise<void> {
   const driver = await createDriver();
   const secrets = new SecretStore(driver);
   await secrets.load();
+
+  // Rotating the administrator token is an explicit, deliberate action. It
+  // runs before ensureTokens so a first-ever run with this flag prints only
+  // the token that will actually be used, never a superseded one.
+  if (process.argv.includes('--rotate-admin-token')) {
+    await rotateAdminToken(secrets);
+    await driver.close();
+    process.exit(0);
+  }
 
   await ensureTokens(secrets);
 
