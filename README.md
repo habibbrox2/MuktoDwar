@@ -8,6 +8,23 @@
 
 **Live site (GitHub Pages):** https://habibbrox2.github.io/MuktoDwar/
 
+## How it works
+
+MuktoDwar is a local-only Node.js gateway that exposes an OpenAI-compatible API on `127.0.0.1:8787`. It routes requests across multiple explicitly allowlisted free providers and keys, with hybrid routing (priority, latency, health). Secrets are stored encrypted with Windows DPAPI. The admin dashboard is served from the same process.
+
+## Usage
+
+1. Install and verify: `npm ci && npm run verify`
+2. Start: `npm start` (opens the dashboard automatically).
+3. On first run, the administrator token is printed once in the console. Use it to sign in.
+4. Add providers (Kilo and OpenCode are enabled by default; Cloudflare requires your account ID + API token).
+5. Allowlist free models, configure routing, and test via the API Playground.
+6. Rotate gateway/admin tokens from the Tokens page when needed.
+
+## Brand assets
+
+MuktoDwar uses the **Open Gateway** identity: a neon open door with connected routing nodes, on a dark navy canvas. See the complete [brand guide](docs/brand/muktodwar-brand-guide.md).
+
 ## Brand assets
 
 MuktoDwar uses the **Open Gateway** identity: a neon open door with connected routing nodes, on a dark navy canvas. See the complete [brand guide](docs/brand/muktodwar-brand-guide.md).
