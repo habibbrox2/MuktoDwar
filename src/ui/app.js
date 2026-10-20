@@ -73,6 +73,25 @@ function el(tag, props = {}, children = []) {
 
 let toastTimer = null;
 
+function applyMotionPreference() {
+  const stored = localStorage.getItem('muktodwar-reduced-motion');
+  const reduced = stored === 'true' || (stored === null && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  document.body.dataset.reducedMotion = String(reduced);
+  const btn = $('btn-motion');
+  if (btn) btn.setAttribute('aria-pressed', String(reduced));
+}
+
+applyMotionPreference();
+
+$('btn-motion')?.addEventListener('click', () => {
+  const next = document.body.dataset.reducedMotion !== 'true';
+  document.body.dataset.reducedMotion = String(next);
+  localStorage.setItem('muktodwar-reduced-motion', String(next));
+  const btn = $('btn-motion');
+  if (btn) btn.setAttribute('aria-pressed', String(next));
+  toast(next ? 'Reduced motion enabled.' : 'Reduced motion disabled.', 'ok');
+});
+
 function confirmDialog(message, title = 'Confirm') {
   return new Promise((resolve) => {
     const dialog = $('confirm-dialog');
