@@ -587,7 +587,11 @@ function openProviderDialog(provider) {
   syncKindBehaviour();
 }
 
-$('provider-kind').addEventListener('change', syncKindBehaviour);
+$('provider-kind').addEventListener('change', () => {
+  renderModelChips(state.editing);
+  renderProviderKeys(state.editing);
+  syncKindBehaviour();
+});
 
 async function testConnection() {
   const kind = $('provider-kind').value;
@@ -675,10 +679,23 @@ function syncKindBehaviour() {
   }
 
   // Preselect the label and id for a new provider.
+  const isCustom = kind === 'custom';
   if (!state.editing) {
     if (!$('provider-label').value) $('provider-label').value = catalog.label;
     if (!$('provider-id').value) $('provider-id').value = kind;
+    // For built-in providers, auto-select all catalog models.
+    if (!isCustom) {
+      for (const chip of document.querySelectorAll('#provider-models .chip')) {
+        chip.dataset.selected = 'true';
+        chip.setAttribute('aria-checked', 'true');
+        if (chip.firstChild) chip.firstChild.textContent = '✓';
+      }
+    }
   }
+
+  // Custom providers need manual name/id/model; built-ins are auto-filled.
+  $('provider-label').disabled = !isCustom && !state.editing;
+  $('provider-id').disabled = Boolean(state.editing) || !isCustom;
 }
 
 function renderModelChips(provider) {
