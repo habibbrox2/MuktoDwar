@@ -211,10 +211,11 @@ async function lockConsole() {
  * Tabs
  * ------------------------------------------------------------------ */
 
-for (const tab of document.querySelectorAll('.tab')) {
+const tabs = [...document.querySelectorAll('.tab')];
+for (const tab of tabs) {
   tab.addEventListener('click', () => {
     const name = tab.dataset.tab;
-    for (const other of document.querySelectorAll('.tab')) {
+    for (const other of tabs) {
       other.setAttribute('aria-selected', String(other === tab));
     }
     for (const panel of document.querySelectorAll('.panel')) {
@@ -226,6 +227,18 @@ for (const tab of document.querySelectorAll('.tab')) {
     if (name === 'settings') {
       loadSettings();
     }
+  });
+  tab.addEventListener('keydown', (event) => {
+    const idx = tabs.indexOf(tab);
+    let next = idx;
+    if (event.key === 'ArrowRight' || event.key === 'ArrowDown') next = (idx + 1) % tabs.length;
+    else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') next = (idx - 1 + tabs.length) % tabs.length;
+    else if (event.key === 'Home') next = 0;
+    else if (event.key === 'End') next = tabs.length - 1;
+    else return;
+    event.preventDefault();
+    tabs[next].focus();
+    tabs[next].click();
   });
 }
 
