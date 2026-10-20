@@ -42,7 +42,7 @@ export interface GatewayApp {
 
 /** Locate the static UI directory. */
 function findUiDir(): string | null {
-  const here = dirname(fileURLToPath(import.meta.url));
+  const here = (typeof __dirname !== 'undefined' ? __dirname : dirname(fileURLToPath(eval('import.meta.url'))));
   const candidates = [
     resolve(here, '..', 'ui'),
     resolve(here, '..', '..', 'src', 'ui'),

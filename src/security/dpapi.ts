@@ -119,7 +119,7 @@ interface RawCodecResponse {
  * `scripts/dpapi.ps1`.
  */
 export async function findDpapiScript(startDir?: string): Promise<string | null> {
-  const here = startDir ?? dirname(fileURLToPath(import.meta.url));
+  const here = startDir ?? (typeof __dirname !== 'undefined' ? __dirname : dirname(fileURLToPath(eval('import.meta.url'))));
   let dir = resolve(here);
   for (let depth = 0; depth < 8; depth += 1) {
     const candidate = join(dir, 'scripts', 'dpapi.ps1');

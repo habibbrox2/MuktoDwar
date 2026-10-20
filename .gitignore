@@ -17,3 +17,7 @@ screenshots/
 
 installer/harvested.wxs
 installer/build/
+
+dist-sea/
+build/sea-bundle.cjs
+build/sea-prep.blob

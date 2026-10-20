@@ -14,8 +14,7 @@
  */
 
 import { existsSync, writeFileSync } from 'node:fs';
-import { exec } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
+import { exec, spawn } from 'node:child_process';
 import { ConfigStore } from './config/store.js';
 import { ensureStateDir, adminTokenRotatedPath } from './config/paths.js';
 import { HealthTracker } from './providers/health.js';
@@ -219,28 +218,33 @@ async function main(): Promise<void> {
   console.log(`  OpenAI API:     ${address}/v1`);
   console.log('');
 
-  // Open the dashboard automatically when the server starts.
+  // Open the dashboard as a standalone window (Edge/Chrome app mode) when possible.
   try {
-    exec(`start "" "${address}/"`, { windowsHide: true });
+    const url = `${address}/`;
+    const candidates = [
+      "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
+      "C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe",
+      "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+      "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
+    ];
+    const browser = candidates.find((p) => existsSync(p));
+    if (browser) {
+      const userDataDir = `${process.env.LOCALAPPDATA || process.env.TEMP}\\MuktoDwarWebview`;
+      const child = spawn(browser, [`--user-data-dir=${userDataDir}`, `--app=${url}`, "--window-size=1280,800"], { detached: false, stdio: "ignore", windowsHide: false });
+      child.on("exit", () => { void shutdown("WINDOW_CLOSED"); });
+      child.on("error", () => { try { exec(`start "" "${url}"`, { windowsHide: true }); } catch { /* ignore */ } });
+    } else {
+      exec(`start "" "${url}"`, { windowsHide: true });
+    }
   } catch {
     // Best effort: never fail startup because the browser could not open.
   }
 }
 
-/** True when the module is the process entrypoint. */
-function isEntryPoint(): boolean {
-  const entry = process.argv[1];
-  if (!entry) return false;
-  const here = fileURLToPath(import.meta.url);
-  return existsSync(here) && entry.replace(/\\/g, '/').endsWith(here.replace(/\\/g, '/').split('/').pop() ?? '');
-}
-
-if (isEntryPoint()) {
-  main().catch((error: unknown) => {
-    console.error('The gateway failed to start:');
-    console.error(error instanceof Error ? error.message : String(error));
-    process.exit(1);
-  });
-}
+main().catch((error: unknown) => {
+  console.error('The gateway failed to start:');
+  console.error(error instanceof Error ? error.message : String(error));
+  process.exit(1);
+});
 
 export { main };

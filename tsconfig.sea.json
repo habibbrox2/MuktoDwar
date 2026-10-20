@@ -1,0 +1,20 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "target": "ES2023",
+    "lib": ["ES2023"],
+    "module": "CommonJS",
+    "moduleResolution": "Bundler",
+    "types": ["node"],
+    "verbatimModuleSyntax": false,
+    "isolatedModules": true,
+    "erasableSyntaxOnly": true,
+    "rootDir": "src",
+    "outDir": "dist-sea",
+    "sourceMap": false,
+    "declaration": false,
+    "noEmit": false
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "test", "dist", "dist-sea", "scripts"]
+}

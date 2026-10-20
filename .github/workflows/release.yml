@@ -39,6 +39,7 @@ jobs:
           Copy-Item "build/muktodwar.exe" $app
           Copy-Item -Recurse "src/ui" "$app/ui"
           Copy-Item -Recurse "assets" "$app/assets"
+          Copy-Item -Recurse "scripts" "$app/scripts"
           if (Test-Path "dist") { Copy-Item -Recurse "dist" "$app/dist" }
 
       - name: Build installer (Inno Setup)
