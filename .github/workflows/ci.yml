@@ -24,5 +24,47 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Probe DPAPI layers (temporary)
+        timeout-minutes: 5
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Continue'
+          $ps = "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe"
+          $sw = [Diagnostics.Stopwatch]::StartNew()
+          & $ps -NoProfile -NonInteractive -Command "exit 0" | Out-Null
+          Write-Host "A bare child powershell startup ms: $($sw.ElapsedMilliseconds)"
+          try {
+            Add-Type -AssemblyName System.Security
+            $sw.Restart()
+            $null = [System.Security.Cryptography.ProtectedData]::Protect([Text.Encoding]::UTF8.GetBytes('probe'), $null, [Security.Cryptography.DataProtectionScope]::CurrentUser)
+            Write-Host "B in-process DPAPI ms: $($sw.ElapsedMilliseconds)"
+          } catch {
+            Write-Host "B in-process DPAPI FAILED: $($_.Exception.Message)"
+          }
+          $json = '{"ops":[{"id":"probe","mode":"protect","value":"hello"}]}'
+          $psi = New-Object System.Diagnostics.ProcessStartInfo
+          $psi.FileName = $ps
+          $psi.Arguments = '-NoProfile -NonInteractive -ExecutionPolicy Bypass -File scripts\dpapi.ps1'
+          $psi.UseShellExecute = $false
+          $psi.CreateNoWindow = $true
+          $psi.RedirectStandardInput = $true
+          $psi.RedirectStandardOutput = $true
+          $psi.RedirectStandardError = $true
+          $psi.EnvironmentVariables.Clear()
+          $psi.EnvironmentVariables['SystemRoot'] = $env:SystemRoot
+          $sw.Restart()
+          $p = [Diagnostics.Process]::Start($psi)
+          $p.StandardInput.Write($json)
+          $p.StandardInput.Close()
+          $outTask = $p.StandardOutput.ReadToEndAsync()
+          if ($p.WaitForExit(20000)) {
+            Write-Host "C child codec exited code=$($p.ExitCode) ms=$($sw.ElapsedMilliseconds)"
+            Write-Host "C out: $($outTask.Result)"
+          } else {
+            Write-Host "C child codec HUNG after 20s - killing"
+            try { $p.Kill() } catch {}
+            Write-Host "C partial stdout: $($outTask.Result)"
+          }
+
       - name: Verify (typecheck + tests + build)
         run: npm run verify
