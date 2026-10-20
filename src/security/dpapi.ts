@@ -96,7 +96,7 @@ export interface PowerShellDpapiOptions {
   readonly maxInputBytes?: number;
 }
 
-const DEFAULT_TIMEOUT_MS = 15_000;
+const DEFAULT_TIMEOUT_MS = 45_000;
 const DEFAULT_MAX_OUTPUT_BYTES = 8 * 1024 * 1024;
 const DEFAULT_MAX_INPUT_BYTES = 1024 * 1024;
 
