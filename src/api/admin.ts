@@ -608,7 +608,7 @@ export async function registerAdminRoutes(
   app.get('/admin/update-check', async (request, reply) => {
     if (!(await guard(request, reply))) return;
     const latest = (globalThis as any).__muktodwarLatest ?? null;
-    reply.send({ current: '1.0.0', latest });
+    reply.send({ current: '1.1.0', latest });
   });
 
   /** Rotate the gateway token. The new value is returned exactly once. */

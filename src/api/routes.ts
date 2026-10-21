@@ -82,7 +82,7 @@ export async function registerPublicRoutes(
     const models = router.availableModels();
     return {
       status: 'ok',
-      version: '1.0.0',
+      version: '1.1.0',
       uptimeSeconds: Math.round(process.uptime()),
       providers: config.providers.filter((provider) => provider.enabled).length,
       models: models.length,

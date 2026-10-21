@@ -6,7 +6,7 @@
   package in installer/muktodwar.iss. Both are produced from the same
   application build and follow the same installation policy:
 
-    * Application version .......... 1.0.0 (identical in both installers)
+    * Application version .......... 1.1.0 (identical in both installers)
     * Install location ............. %ProgramFiles%\MuktoDwar
     * Start Menu shortcut ......... yes (identical name and target)
     * Uninstaller ................... provided by Windows Installer, and
@@ -24,7 +24,7 @@
     Id="*"
     Name="MuktoDwar"
     Language="1033"
-    Version="1.0.0"
+    Version="1.1.0"
     Manufacturer="MuktoDwar"
     UpgradeCode="12345678-1234-1234-1234-123456789ABC">
     <Package
