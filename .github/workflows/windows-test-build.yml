@@ -83,7 +83,8 @@ jobs:
           if (-not $msi) {
             throw "MSI was not generated."
           }
-          Get-FileHash @("build/muktodwar.exe") + @($msi.FullName) -Algorithm SHA256
+          $files = @("build/muktodwar.exe") + @($msi.FullName)
+          Get-FileHash $files -Algorithm SHA256
 
       - name: Upload test artifacts
         uses: actions/upload-artifact@v4
