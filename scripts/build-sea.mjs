@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { copyFileSync, existsSync, mkdirSync, readdirSync, statSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, readdirSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -32,21 +32,25 @@ function findEditbin() {
   ];
   for (const r of roots) {
     if (!existsSync(r)) continue;
-    // search recursively for editbin.exe
-    const stack = [r];
-    while (stack.length) {
-      const dir = stack.pop();
-      let entries;
-      try { entries = readdirSync(dir, { withFileTypes: true }); } catch { continue; }
-      for (const e of entries) {
-        const full = join(dir, e.name);
-        if (e.isDirectory()) stack.push(full);
-        else if (e.name === 'editbin.exe') return full;
+    try {
+      const versions = readdirSync(r, { withFileTypes: true });
+      for (const v of versions) {
+        if (!v.isDirectory()) continue;
+        const vc = join(r, v.name, 'VC', 'Tools', 'MSVC');
+        if (!existsSync(vc)) continue;
+        const msvers = readdirSync(vc, { withFileTypes: true }).filter((d) => d.isDirectory());
+        for (const msver of msvers) {
+          const bin = join(vc, msver.name, 'bin', 'Hostx64', 'x64', 'editbin.exe');
+          if (existsSync(bin)) return bin;
+          const bin86 = join(vc, msver.name, 'bin', 'Hostx86', 'x86', 'editbin.exe');
+          if (existsSync(bin86)) return bin86;
+        }
       }
-    }
+    } catch { /* ignore */ }
   }
   return null;
 }
+
 const editbin = findEditbin();
 if (editbin) {
   execFileSync(editbin, ['/SUBSYSTEM:WINDOWS', out], { stdio: 'inherit' });

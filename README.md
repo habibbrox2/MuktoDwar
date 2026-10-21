@@ -426,3 +426,8 @@ Each release includes:\n- muktodwar.exe — single-file executable\n- MuktoDwar-
 ## Credits
 
 - **Made in Bangladesh** 🇧🇩\n- **Open Source** — MIT License\n- **Developer:** Hr Habib\n- GitHub: https://github.com/habibbrox2\n
+## Desktop application
+
+MuktoDwar ships as a true Windows desktop application:
+
+- Single-file muktodwar.exe (no console window) with the MuktoDwar brand icon.\n- Standalone window via Edge/Chrome app mode (no address bar); closing the window stops the server.\n- Inno Setup installer and MSI, both with uninstaller entry in Add/Remove Programs.\n- DPAPI-encrypted secrets, local-only binding, free-only routing.\n
