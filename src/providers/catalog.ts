@@ -369,10 +369,37 @@ export const CATALOG: Record<ProviderKind, CatalogProvider> = {
     shipStatus: 'VERIFIED',
   },
 
+  zenmux: {
+    kind: 'zenmux',
+    label: 'ZenMux',
+    baseUrl: 'https://zenmux.ai/api/v1',
+    requiresKey: true,
+    freeWithoutCard: false,
+    freeTerms:
+      'Seven models in the official catalogue are priced at zero, so calling them costs nothing. The account is not free: Pay As You Go runs on a prepaid balance (top-ups start at $5 through Stripe or Alipay) and the Builder Plan is a subscription from $20 a month.',
+    caveats: [
+      'An API key is required. A keyless chat call answers HTTP 403 with access_denied; only the model list is public.',
+      'Pay As You Go has no rate limit. The Builder Plan is limited to 10-15 RPM and a weekly quota, and its terms forbid production use.',
+      'The zero-price list is read from the public catalogue (GET /api/v1/models) and changes as providers add and retire free models.',
+      'Two more models are priced at zero but generate images (inclusionai/ming-image-0.1-design and inclusionai/ming-image-0.1-design-layer). They are not pre-allowlisted because they belong on the image endpoint.',
+      'ZenMux is deliberately not taken from the models.dev snapshot: that catalogue still lists four ids the provider has retired (moonshotai/kimi-k3-free, moonshotai/kimi-k2.7-code-free, anthropic/claude-sonnet-5-free and stepfun/step-3.7-flash-free).',
+    ],
+    models: [
+      { id: 'z-ai/glm-4.7-flash-free', free: true, verified: true, contextWindow: 200000, maxOutputTokens: 128000, source: 'https://zenmux.ai/api/v1/models (official catalogue, prompt and completion priced 0, 2026-10-21)' },
+      { id: 'z-ai/glm-4.6v-flash-free', free: true, verified: true, contextWindow: 200000, maxOutputTokens: 128000, source: 'https://zenmux.ai/api/v1/models (official catalogue, prompt and completion priced 0, 2026-10-21)' },
+      { id: 'atria-asi/atria-dawn', free: true, verified: true, contextWindow: 524288, maxOutputTokens: 65536, source: 'https://zenmux.ai/api/v1/models (official catalogue, prompt and completion priced 0, 2026-10-21)' },
+      { id: 'atria-asi/atria-dawn-preview', free: true, verified: true, contextWindow: 262144, maxOutputTokens: 65536, source: 'https://zenmux.ai/api/v1/models (official catalogue, prompt and completion priced 0, 2026-10-21)' },
+      { id: 'inclusionai/ling-3.1-flash', free: true, verified: true, contextWindow: 262144, maxOutputTokens: 32768, source: 'https://zenmux.ai/api/v1/models (official catalogue, prompt and completion priced 0, 2026-10-21)' },
+      { id: 'sapiens-ai/agnes-2.5-flash', free: true, verified: true, contextWindow: 524288, maxOutputTokens: 65536, source: 'https://zenmux.ai/api/v1/models (official catalogue, prompt and completion priced 0, 2026-10-21)' },
+      { id: 'dots-studio/dots3-note-prev', free: true, verified: true, contextWindow: 393100, maxOutputTokens: 393100, source: 'https://zenmux.ai/api/v1/models (official catalogue, prompt and completion priced 0, 2026-10-21)' },
+    ],
+    docsUrl: 'https://zenmux.ai/docs/guide/quickstart.html',
+    shipStatus: 'VERIFIED',
+  },
+
   requesty: {
     kind: 'requesty',
-    label: 'Requesty',
-    baseUrl: 'https://router.requesty.ai/v1',
+    label: 'Requesty',    baseUrl: 'https://router.requesty.ai/v1',
     requiresKey: true,
     freeWithoutCard: true,
     freeTerms:
@@ -636,6 +663,7 @@ export const PROVIDER_KINDS: readonly ProviderKind[] = [
   'kilo',
   'opencode',
   'opencodego',
+  'zenmux',
   'requesty',
   'bazaarlink',
   'anyapi',

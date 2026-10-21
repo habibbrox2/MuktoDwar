@@ -30,6 +30,7 @@ The `verified` flag means *"confirmed free on 2026-10-21"*. It never means *"wil
 | Kilo AI Gateway | **VERIFIED** | YES | 22 | `https://ai-gateway.kilo.ai/api/v1` |
 | OpenCode Console (Zen) | **VERIFIED** | NO (a key and credits) | 14 | `https://opencode.ai/inference/openai/v1` |
 | OpenCode Go | **VERIFIED** | NO ($10/month) | 3 | `https://opencode.ai/inference/go/openai/v1` |
+| ZenMux | **VERIFIED** | NO (a balance or a plan) | 7 | `https://zenmux.ai/api/v1` |
 | Requesty | **VERIFIED** | YES | 11 | `https://router.requesty.ai/v1` |
 | Ollama (local) | **VERIFIED** | N/A (local) | none preloaded | `http://127.0.0.1:11434/v1` |
 | LM Studio (local) | **VERIFIED** | N/A (local) | none preloaded | `http://127.0.0.1:1234/v1` |
@@ -91,6 +92,15 @@ The `verified` flag means *"confirmed free on 2026-10-21"*. It never means *"wil
 - **Docs:** <https://kilo.ai/docs/gateway>, <https://kilo.ai/docs/gateway/models-and-providers>
 
 
+### ZenMux
+
+- **Base URL:** `https://zenmux.ai/api/v1`
+- **Auth:** `Authorization: Bearer <ZENMUX_API_KEY>`
+- **Free without card:** **NO.** The models below cost nothing to call, but the account does: Pay As You Go runs on a prepaid balance (top-ups start at $5 through Stripe or Alipay) and the Builder Plan is a subscription from $20 a month.
+- **Free models (7):** `z-ai/glm-4.7-flash-free`, `z-ai/glm-4.6v-flash-free`, `atria-asi/atria-dawn`, `atria-asi/atria-dawn-preview`, `inclusionai/ling-3.1-flash`, `sapiens-ai/agnes-2.5-flash` and `dots-studio/dots3-note-prev`. Every one of them is listed in the official catalogue with a prompt price of 0 and a completion price of 0.
+- **Free-tier limits:** Pay As You Go has **no rate limit** and no concurrency limit. The Builder Plan is limited to **10-15 RPM** and a weekly quota, and its terms forbid production use.
+- **Caveats:** An API key is required; a keyless chat call answers HTTP 403 with `access_denied`, only the model list is public. Two more models are priced at zero but generate images (`inclusionai/ming-image-0.1-design` and `inclusionai/ming-image-0.1-design-layer`); they are not pre-allowlisted because they belong on the image endpoint. The zero-price list changes as providers add and retire free models.
+- **Docs:** <https://zenmux.ai/docs/guide/quickstart.html>, <https://zenmux.ai/docs/guide/pay-as-you-go.html>, <https://zenmux.ai/api/v1/models>
 ### Requesty
 
 - **Base URL:** `https://router.requesty.ai/v1`
@@ -296,6 +306,7 @@ What the snapshot changes:
 - **It widens the free lists.** Kilo ships 22 free ids instead of 1, and OpenRouter gains the two zero-price Google models next to its 17 documented `:free` ids.
 - **It fills in the limits.** The context window and the output limit of a model come from the same record as its price.
 - **It corrects typos.** The Requesty list contained `iling-3.1-flash` and `iling-3.0-tiny`; the catalogue says `ling-3.0-tiny`, and `iling-3.1-flash` does not exist on Requesty at all.
+- **It is not used everywhere.** Poolside and ZenMux are left out on purpose: for both, the provider publishes its own exact catalogue and the snapshot lags behind it.
 
 What it does **not** change:
 

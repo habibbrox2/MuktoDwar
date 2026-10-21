@@ -27,9 +27,11 @@ const SOURCE_URL = 'https://models.dev/api.json';
  * compatible catalogue for it, or its models are local and depend on what
  * the administrator has loaded.
  *
- * Poolside is deliberately absent. Its price catalogue describes the
- * OpenRouter ids, while the hosted endpoint the gateway talks to serves a
- * different, documented set of ids.
+ * Poolside and ZenMux are deliberately absent. Poolside's price catalogue
+ * describes the OpenRouter ids, while the hosted endpoint the gateway
+ * talks to serves a different, documented set of ids. ZenMux publishes its
+ * own public catalogue, and models.dev still lists four ids that provider
+ * has already retired.
  */
 const PROVIDER_MAP = {
   kilo: 'kilo',
