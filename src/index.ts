@@ -150,7 +150,27 @@ async function ensureDefaultProviders(configStore: ConfigStore): Promise<void> {
 }
 
 /** Start the gateway. */
+function isProcessAlive(pid: number): boolean {
+  try { process.kill(pid, 0); return true; } catch { return false; }
+}
+
 async function main(): Promise<void> {
+  // Single-instance guard
+  const { join: _join } = await import('node:path');
+  const { existsSync: _exists, readFileSync: _read, writeFileSync: _write, mkdirSync: _mkdir } = await import('node:fs');
+  const lockDir = process.env.LOCALAPPDATA || process.env.TEMP || '.';
+  const lockPath = _join(lockDir, 'MuktoDwar', 'muktodwar.lock');
+  try {
+    if (_exists(lockPath)) {
+      const pid = Number(_read(lockPath, 'utf8').trim());
+      if (pid && isProcessAlive(pid)) {
+        try { (await import('node:child_process')).exec('start "" "http://127.0.0.1:8787/"', { windowsHide: true }); } catch { /* ignore */ }
+        process.exit(0);
+      }
+    }
+  } catch { /* ignore */ }
+  try { _mkdir(_join(lockDir, 'MuktoDwar'), { recursive: true }); _write(lockPath, String(process.pid), 'utf8'); } catch { /* ignore */ }
+
   await ensureStateDir();
 
   const configStore = new ConfigStore();
@@ -202,6 +222,7 @@ async function main(): Promise<void> {
 
   const shutdown = async (signal: string): Promise<void> => {
     console.log(`\n  ${signal} received, shutting down.`);
+    try { (await import('node:fs')).unlinkSync(lockPath); } catch { /* ignore */ }
     secrets.clearCache();
     await driver.close();
     await app.close();
