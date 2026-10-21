@@ -14,7 +14,7 @@
  */
 
 import { existsSync, writeFileSync } from 'node:fs';
-import { exec, spawn } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import { ConfigStore } from './config/store.js';
 import { ensureStateDir, adminTokenRotatedPath } from './config/paths.js';
 import { HealthTracker } from './providers/health.js';
