@@ -8,7 +8,11 @@ const out = join(root, 'build', 'muktodwar.exe');
 const bundle = join(root, 'build', 'sea-bundle.cjs');
 
 // 1. Bundle the app into a single CommonJS file.
-execFileSync('npx', ['esbuild', 'src/index.ts', '--bundle', '--platform=node', '--format=cjs', `--outfile=${bundle}`, '--target=node22'], {
+//
+// `import.meta.dirname` is replaced with `__dirname`: the bundle is
+// CommonJS, where `__dirname` is the equivalent anchor, and `import.meta`
+// does not exist in that format.
+execFileSync('npx', ['esbuild', 'src/index.ts', '--bundle', '--platform=node', '--format=cjs', '--define:import.meta.dirname=__dirname', `--outfile=${bundle}`, '--target=node22'], {
   stdio: 'inherit',
   cwd: root,
   shell: true,

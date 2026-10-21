@@ -8,7 +8,6 @@
 import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import Fastify, { type FastifyInstance } from 'fastify';
 import fastifyCookie from '@fastify/cookie';
 import fastifyStatic from '@fastify/static';
@@ -22,6 +21,7 @@ import { assertLoopbackBind, isAllowedHostHeader } from './security/localhost.js
 import { registerPublicRoutes } from './api/routes.js';
 import { registerAdminRoutes } from './api/admin.js';
 import { redactRequestSummary, redactValue } from './security/redact.js';
+import { moduleDirectory } from './module-dir.js';
 
 /** Everything the application needs, injected so tests can substitute it. */
 export interface AppDependencies {
@@ -42,7 +42,7 @@ export interface GatewayApp {
 
 /** Locate the static UI directory. */
 function findUiDir(): string | null {
-  const here = (typeof __dirname !== 'undefined' ? __dirname : dirname(fileURLToPath(eval('import.meta.url'))));
+  const here = moduleDirectory();
   const candidates = [
     resolve(here, '..', 'ui'),
     resolve(here, '..', '..', 'src', 'ui'),
