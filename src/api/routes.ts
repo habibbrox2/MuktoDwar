@@ -8,7 +8,7 @@
 
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
-import { Router, RoutingError } from '../providers/router.js';
+import { GATEWAY_AUTO_MODEL, Router, RoutingError } from '../providers/router.js';
 import { ProviderError } from '../providers/types.js';
 import type { ChatCompletionRequest } from '../providers/types.js';
 import { SecretStore } from '../security/secret-store.js';
@@ -124,9 +124,26 @@ export async function registerPublicRoutes(
       verified: entry.model.verified,
     }));
 
-    // The default model is listed first, as the OpenAI API does.
+    // The gateway's own auto model comes first: it is the id a client can
+    // be configured with once and keep using when the allowlist changes.
+    if (data.length > 0) {
+      data.unshift({
+        id: GATEWAY_AUTO_MODEL,
+        object: 'model',
+        created,
+        owned_by: 'muktodwar',
+        free: true,
+        verified: true,
+      });
+    }
+
+    // The gateway's own auto model comes first: it is the id a client can
+    // be configured with once and keep using when the allowlist changes.
+    // The configured default follows, then the rest alphabetically.
     const defaultModel = config.routing.defaultModel;
     data.sort((a, b) => {
+      if (a.id === GATEWAY_AUTO_MODEL) return -1;
+      if (b.id === GATEWAY_AUTO_MODEL) return 1;
       if (a.id === defaultModel) return -1;
       if (b.id === defaultModel) return 1;
       return a.id.localeCompare(b.id);

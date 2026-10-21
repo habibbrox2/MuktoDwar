@@ -32,6 +32,17 @@ import { SecretStore } from '../security/secret-store.js';
 /** The key id used for a provider that is called without any credential. */
 const ANONYMOUS_KEY_ID = 'anonymous';
 
+/**
+ * The gateway's own model id.
+ *
+ * It is not a model a provider offers: it is the gateway's way of saying
+ * "any free model you have allowlisted". A client can be configured with
+ * this id once and keeps working when the allowlist changes, because the
+ * router always resolves it to the best free model available at that
+ * moment.
+ */
+export const GATEWAY_AUTO_MODEL = 'mukto-auto/free';
+
 /** One candidate route: a provider, a model and a key. */
 export interface RouteCandidate {
   readonly provider: ProviderConfig;
@@ -180,17 +191,16 @@ export class Router {
    * Resolve the model a request should use.
    *
    * An empty model falls back to the configured default. The default must
-   * itself be allowlisted and free. When no default is configured, the first
-   * model the gateway can actually serve is used, so the gateway works out
-   * of the box. That fallback comes from the same free allowlist, so the
-   * free-only guarantee still holds.
+   * itself be allowlisted and free. When no default is configured, the
+   * gateway's own auto model is used, so the gateway works out of the box.
+   * That fallback comes from the same free allowlist, so the free-only
+   * guarantee still holds.
    */
   private resolveRequestedModel(requested: string | undefined): string {
     const candidate = requested?.trim() || this.deps.config.routing.defaultModel.trim();
     if (candidate) return candidate;
 
-    const [fallback] = this.availableModels();
-    if (fallback) return fallback.model.id;
+    if (this.availableModels().length > 0) return GATEWAY_AUTO_MODEL;
 
     throw new RoutingError(
       'no_model_requested',
@@ -205,10 +215,15 @@ export class Router {
    * A candidate is only produced when the provider is enabled, the model is
    * allowlisted *and* marked free, and the key is enabled. A provider whose
    * free tier needs no key produces a candidate without a key.
+   *
+   * The gateway's auto model is special: it matches every allowlisted free
+   * model, so the list is the ranking of all of them and the first entry
+   * is the one that serves the request.
    */
   async candidates(requestedModel: string): Promise<RouteCandidate[]> {
     const model = this.resolveRequestedModel(requestedModel);
     const target = normaliseModel(model);
+    const auto = target === normaliseModel(GATEWAY_AUTO_MODEL);
     const results: RouteCandidate[] = [];
 
     for (const provider of this.deps.config.providers) {
@@ -218,7 +233,7 @@ export class Router {
         // Free-only enforcement. This is the single choke point that keeps
         // the gateway from ever contacting a paid model.
         if (!entry.free) continue;
-        if (normaliseModel(entry.id) !== target) continue;
+        if (!auto && normaliseModel(entry.id) !== target) continue;
 
         const keys = provider.keys.filter((key) => key.enabled);
         if (keys.length === 0) {

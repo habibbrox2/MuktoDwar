@@ -143,8 +143,9 @@ describe('public API', () => {
       expect(response.statusCode).toBe(200);
       const payload = response.json() as { object: string; data: Array<{ id: string; free: boolean }> };
       expect(payload.object).toBe('list');
-      expect(payload.data.map((m) => m.id)).toEqual(['model-a']);
-      expect(payload.data[0]?.free).toBe(true);
+      // The gateway's own auto model comes first, then the allowlist.
+      expect(payload.data.map((m) => m.id)).toEqual(['mukto-auto/free', 'model-a']);
+      expect(payload.data.every((m) => m.free)).toBe(true);
     });
 
     it('never lists a model that is not marked free', async () => {
@@ -163,7 +164,8 @@ describe('public API', () => {
         headers: authHeaders,
       });
       const payload = response.json() as { data: Array<{ id: string }> };
-      expect(payload.data.map((m) => m.id)).toEqual(['model-a']);
+      expect(payload.data.map((m) => m.id)).toEqual(['mukto-auto/free', 'model-a']);
+      expect(payload.data.map((m) => m.id)).not.toContain('paid-model');
     });
 
     it('lists the models of a provider that needs no key', async () => {
@@ -178,8 +180,43 @@ describe('public API', () => {
 
       expect(response.statusCode).toBe(200);
       const payload = response.json() as { data: Array<{ id: string; owned_by: string }> };
-      expect(payload.data.map((m) => m.id)).toEqual(['model-a']);
-      expect(payload.data[0]?.owned_by).toBe('p1');
+      expect(payload.data.map((m) => m.id)).toEqual(['mukto-auto/free', 'model-a']);
+      expect(payload.data[0]?.owned_by).toBe('muktodwar');
+      expect(payload.data[1]?.owned_by).toBe('p1');
+    });
+  });
+
+  describe('the gateway auto model', () => {
+    it('serves a request for mukto-auto/free and names the model that answered', async () => {
+      const { ctx } = await buildConfiguredApp([provider({ id: 'p1' })]);
+      stubFetch([new Response(completionBody(), { status: 200 })]);
+
+      const response = await ctx.app.app.inject({
+        method: 'POST',
+        url: '/v1/chat/completions',
+        headers: authHeaders,
+        payload: { model: 'mukto-auto/free', messages: [{ role: 'user', content: 'hi' }] },
+      });
+
+      expect(response.statusCode).toBe(200);
+      const payload = response.json() as { model: string };
+      expect(payload.model).toBe('model-a');
+    });
+
+    it('is rejected when nothing is allowlisted', async () => {
+      const { ctx } = await buildConfiguredApp([
+        provider({ id: 'p1', models: [{ id: 'paid-model', free: false, verified: false }] }),
+      ]);
+      const response = await ctx.app.app.inject({
+        method: 'POST',
+        url: '/v1/chat/completions',
+        headers: authHeaders,
+        payload: { model: 'mukto-auto/free', messages: [{ role: 'user', content: 'hi' }] },
+      });
+
+      expect(response.statusCode).toBe(404);
+      const payload = response.json() as { error: { code: string } };
+      expect(payload.error.code).toBe('no_candidate');
     });
   });
 

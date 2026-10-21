@@ -150,7 +150,19 @@ Point any OpenAI-compatible client at the gateway:
 |---|---|
 | **Base URL** | `http://127.0.0.1:8787/v1` |
 | **API key** | your **gateway token** (any non-empty string works for some clients; only your real token is accepted) |
-| **Model** | an id from `GET /v1/models` |
+| **Model** | `mukto-auto/free` |
+
+`mukto-auto/free` is the gateway's own model id: it means *any free model
+you have allowlisted*. Configure it once and the client keeps working
+when you allowlist a new model or add a provider — the gateway resolves
+it at request time and tells you in the reply which model actually
+served the request. The pinned ids are in `GET /v1/models` if you prefer
+one.
+
+> **[docs/connect-a-client.md](docs/connect-a-client.md)** is the full guide:
+> step by step setup, a recipe for every client (OpenAI SDK, OpenCode,
+> Continue, Cline, Aider, LiteLLM, LangChain, PHP, PowerShell), how to keep
+> the token out of your code, and what every error means.
 
 ### OpenAI SDK (JavaScript / TypeScript)
 

@@ -264,6 +264,60 @@ describe('Router', () => {
     });
   });
 
+  describe('the gateway auto model', () => {
+    it('resolves to every allowlisted free model, best first', async () => {
+      const config = configWith([
+        provider({ id: 'p1', priority: 10 }),
+        provider({ id: 'p2', priority: 90 }),
+      ]);
+      const { router } = await makeRouter(config);
+
+      const candidates = await router.candidates('mukto-auto/free');
+
+      expect(candidates.length).toBe(4);
+      expect(candidates[0]?.provider.id).toBe('p1');
+      expect(new Set(candidates.map((c) => c.model.id)).size).toBe(2);
+    });
+
+    it('never resolves to a model that is not free', async () => {
+      const config = configWith([
+        provider({ id: 'p1', models: [{ id: 'model-a', free: false, verified: false }] }),
+      ]);
+      const { router } = await makeRouter(config);
+
+      expect(await router.candidates('mukto-auto/free')).toHaveLength(0);
+    });
+
+    it('serves the request with the model that won the ranking', async () => {
+      const config = configWith([
+        provider({ id: 'p1', priority: 10 }),
+        provider({ id: 'p2', priority: 90 }),
+      ]);
+      const { router } = await makeRouter(config);
+      stubFetch([new Response(completionBody(), { status: 200 })]);
+
+      const { candidate } = await router.complete(chatRequest('mukto-auto/free'), callOptions);
+
+      expect(candidate.provider.id).toBe('p1');
+    });
+
+    it('is the fallback when no model is requested', async () => {
+      const config = configWith([provider({ id: 'p1' })], { defaultModel: '' });
+      const { router } = await makeRouter(config);
+
+      const candidates = await router.candidates('');
+
+      expect(candidates.length).toBeGreaterThan(0);
+    });
+
+    it('matches regardless of case', async () => {
+      const config = configWith([provider({ id: 'p1' })]);
+      const { router } = await makeRouter(config);
+
+      expect(await router.candidates('Mukto-Auto/Free')).not.toHaveLength(0);
+    });
+  });
+
   describe('failover', () => {
     it('tries the next provider when the first one fails', async () => {
       const config = configWith([
