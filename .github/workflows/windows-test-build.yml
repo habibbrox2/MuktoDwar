@@ -1,0 +1,97 @@
+name: Windows Test Build
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test-build:
+    name: Build Windows Test Packages
+    runs-on: windows-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 26
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify project
+        run: npm run verify
+
+      - name: Build standalone executable
+        run: npm run build:sea
+
+      - name: Assemble application
+        shell: pwsh
+        run: |
+          $app = "build/app"
+          New-Item -ItemType Directory -Force -Path $app | Out-Null
+          Copy-Item "build/muktodwar.exe" $app
+          Copy-Item -Recurse "src/ui" "$app/ui"
+          Copy-Item -Recurse "assets" "$app/assets"
+          Copy-Item -Recurse "scripts" "$app/scripts"
+          if (Test-Path "dist") {
+            Copy-Item -Recurse "dist" "$app/dist"
+          }
+
+      - name: Install Inno Setup
+        run: choco install innosetup -y
+
+      - name: Build Windows installer
+        shell: pwsh
+        run: |
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer/muktodwar.iss
+          if ($LASTEXITCODE -ne 0) {
+            throw "Inno Setup build failed."
+          }
+
+      - name: Install WiX Toolset
+        run: choco install wixtoolset -y
+
+      - name: Build MSI
+        shell: pwsh
+        run: |
+          $env:Path = "C:\Program Files (x86)\WiX Toolset v3.11\bin;" + $env:Path
+          heat dir build/app -cg ProductComponents -gg -scom -sreg -sfrag -srd -dr INSTALLFOLDER -var var.SourceDir -out installer/harvested.wxs
+          New-Item -ItemType Directory -Force -Path build/installer | Out-Null
+          candle -dSourceDir=build/app installer/muktodwar.wxs installer/harvested.wxs -out build/
+          if ($LASTEXITCODE -ne 0) {
+            throw "WiX compilation failed."
+          }
+          light build/muktodwar.wixobj build/harvested.wixobj -out build/installer/MuktoDwar.msi
+          if ($LASTEXITCODE -ne 0) {
+            throw "MSI linking failed."
+          }
+
+      - name: Verify output files
+        shell: pwsh
+        run: |
+          if (-not (Test-Path "build/muktodwar.exe")) {
+            throw "Standalone executable was not generated."
+          }
+          $msi = Get-ChildItem "build/installer" -Filter "*.msi" -ErrorAction SilentlyContinue
+          if (-not $msi) {
+            throw "MSI was not generated."
+          }
+          Get-FileHash @("build/muktodwar.exe") + @($msi.FullName) -Algorithm SHA256
+
+      - name: Upload test artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: muktodwar-windows-test-${{ github.run_number }}
+          path: |
+            build/muktodwar.exe
+            build/installer/*.exe
+            build/installer/*.msi
+          if-no-files-found: error
+          retention-days: 7
