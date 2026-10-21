@@ -1,18 +1,87 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+  MuktoDwar - Windows Installer (MSI) package.
+
+  This installer is the managed-deployment alternative to the Inno Setup
+  package in installer/muktodwar.iss. Both are produced from the same
+  application build and follow the same installation policy:
+
+    * Application version .......... 1.0.0 (identical in both installers)
+    * Install location ............. %ProgramFiles%\MuktoDwar
+    * Start Menu shortcut ......... yes (identical name and target)
+    * Uninstaller ................... provided by Windows Installer, and
+                                    registered in Add/Remove Programs
+    * User data .................... kept on upgrade and on uninstall
+                                    (configuration and DPAPI-encrypted keys
+                                    live in %LOCALAPPDATA%\LocalAIGateway,
+                                    outside the installation directory)
+
+  The cabinet is embedded in the package so the .msi is a single,
+  self-contained file that can be deployed by any standard MSI tool.
+-->
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
-  <Product Id="*" Name="MuktoDwar" Language="1033" Version="1.0.0" Manufacturer="MuktoDwar" UpgradeCode="12345678-1234-1234-1234-123456789ABC">
-    <Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
-    <MajorUpgrade DowngradeErrorMessage="A newer version is already installed." />
-    <MediaTemplate />
-    <Feature Id="ProductFeature" Title="MuktoDwar" Level="1">
+  <Product
+    Id="*"
+    Name="MuktoDwar"
+    Language="1033"
+    Version="1.0.0"
+    Manufacturer="MuktoDwar"
+    UpgradeCode="12345678-1234-1234-1234-123456789ABC">
+    <Package
+      InstallerVersion="200"
+      Compressed="yes"
+      InstallScope="perMachine"
+      Description="MuktoDwar - local AI gateway for Windows"
+      Manufacturer="MuktoDwar" />
+    <MajorUpgrade DowngradeErrorMessage="A newer version of MuktoDwar is already installed." />
+    <MediaTemplate CabinetTemplate="app{0}.cab" CompressionLevel="high" EmbedCab="yes" />
+    <Property Id="ARPPRODUCTICON" Value="muktodwar.ico" />
+    <Property Id="ARPHELPLINK" Value="https://github.com/habibbrox2/MuktoDwar#readme" />
+    <Property Id="ARPURLINFOABOUT" Value="https://github.com/habibbrox2/MuktoDwar" />
+    <Property Id="ARPNOREPAIR" Value="1" />
+    <Icon Id="MuktoDwarIcon" SourceFile="..\assets\brand\muktodwar.ico" />
+    <Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />
+    <Feature Id="ProductFeature" Title="MuktoDwar" Level="1" Description="Local AI gateway with an OpenAI-compatible API.">
       <ComponentGroupRef Id="ProductComponents" />
+      <ComponentGroupRef Id="ApplicationShortcuts" />
     </Feature>
   </Product>
+
   <Fragment>
     <Directory Id="TARGETDIR" Name="SourceDir">
       <Directory Id="ProgramFilesFolder">
         <Directory Id="INSTALLFOLDER" Name="MuktoDwar" />
       </Directory>
+      <Directory Id="ProgramMenuFolder" Name="Programs" />
     </Directory>
+  </Fragment>
+
+  <!-- Start Menu entry, matching the Inno Setup package. -->
+  <Fragment>
+    <DirectoryRef Id="ProgramMenuFolder">
+      <Directory Id="AppShortcutFolder" Name="MuktoDwar" />
+    </DirectoryRef>
+    <DirectoryRef Id="INSTALLFOLDER">
+      <Component Id="ApplicationShortcuts" Guid="9E1B4C77-1A22-4E9B-9B3E-5C0F2A6D8E41">
+        <Shortcut
+          Id="StartMenuShortcut"
+          Name="MuktoDwar"
+          Description="MuktoDwar - local AI gateway"
+          Target="[INSTALLFOLDER]muktodwar.exe"
+          WorkingDirectory="INSTALLFOLDER"
+          Icon="MuktoDwarIcon" />
+        <RemoveFolder Id="RemoveAppShortcutFolder" Directory="AppShortcutFolder" On="uninstall" />
+        <RegistryValue
+          Root="HKLM"
+          Key="Software\MuktoDwar"
+          Name="Installed"
+          Type="integer"
+          Value="1"
+          KeyPath="yes" />
+      </Component>
+    </DirectoryRef>
+    <ComponentGroup Id="ApplicationShortcuts">
+      <ComponentRef Id="ApplicationShortcuts" />
+    </ComponentGroup>
   </Fragment>
 </Wix>

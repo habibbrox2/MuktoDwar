@@ -19,7 +19,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '26'
           cache: 'npm'
 
       - name: Install dependencies
@@ -42,21 +42,12 @@ jobs:
           Copy-Item -Recurse "scripts" "$app/scripts"
           if (Test-Path "dist") { Copy-Item -Recurse "dist" "$app/dist" }
 
-      - name: Build installer (Inno Setup)
-        run: |
-          choco install innosetup -y
-          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer/muktodwar.iss
-        shell: pwsh
-
-      - name: Build MSI (WiX)
+      - name: Build installer (Inno Setup) and MSI (WiX)
         shell: pwsh
         run: |
-          choco install wixtoolset -y
-          $env:Path = "C:\Program Files (x86)\WiX Toolset v3.11\bin;" + $env:Path
-          heat dir build/app -cg ProductComponents -gg -scom -sreg -sfrag -srd -dr INSTALLFOLDER -var var.SourceDir -out installer/harvested.wxs
-          New-Item -ItemType Directory -Force -Path build/installer | Out-Null
-          candle -dSourceDir=build/app installer/muktodwar.wxs installer/harvested.wxs -out build/
-          light build/muktodwar.wixobj build/harvested.wixobj -out build/installer/MuktoDwar.msi
+          choco install innosetup -y --no-progress
+          choco install wixtoolset -y --no-progress
+          scripts/build-installers.ps1
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4

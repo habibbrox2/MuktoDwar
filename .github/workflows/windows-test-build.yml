@@ -45,33 +45,14 @@ jobs:
           }
 
       - name: Install Inno Setup
-        run: choco install innosetup -y
-
-      - name: Build Windows installer
-        shell: pwsh
-        run: |
-          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer/muktodwar.iss
-          if ($LASTEXITCODE -ne 0) {
-            throw "Inno Setup build failed."
-          }
+        run: choco install innosetup -y --no-progress
 
       - name: Install WiX Toolset
-        run: choco install wixtoolset -y
+        run: choco install wixtoolset -y --no-progress
 
-      - name: Build MSI
+      - name: Build installers (Inno Setup EXE + WiX MSI)
         shell: pwsh
-        run: |
-          $env:Path = "C:\Program Files (x86)\WiX Toolset v3.11\bin;" + $env:Path
-          heat dir build/app -cg ProductComponents -gg -scom -sreg -sfrag -srd -dr INSTALLFOLDER -var var.SourceDir -out installer/harvested.wxs
-          New-Item -ItemType Directory -Force -Path build/installer | Out-Null
-          candle -dSourceDir=build/app installer/muktodwar.wxs installer/harvested.wxs -out build/
-          if ($LASTEXITCODE -ne 0) {
-            throw "WiX compilation failed."
-          }
-          light build/muktodwar.wixobj build/harvested.wixobj -out build/installer/MuktoDwar.msi
-          if ($LASTEXITCODE -ne 0) {
-            throw "MSI linking failed."
-          }
+        run: scripts/build-installers.ps1
 
       - name: Verify output files
         shell: pwsh
@@ -79,11 +60,15 @@ jobs:
           if (-not (Test-Path "build/muktodwar.exe")) {
             throw "Standalone executable was not generated."
           }
+          $setup = Get-ChildItem "build/installer" -Filter "*.exe" -ErrorAction SilentlyContinue
           $msi = Get-ChildItem "build/installer" -Filter "*.msi" -ErrorAction SilentlyContinue
-          if (-not $msi) {
-            throw "MSI was not generated."
+          if (-not $setup) {
+            throw "The Inno Setup installer was not generated."
           }
-          $files = @("build/muktodwar.exe") + @($msi.FullName)
+          if (-not $msi) {
+            throw "The MSI package was not generated."
+          }
+          $files = @("build/muktodwar.exe") + @($setup.FullName) + @($msi.FullName)
           Get-FileHash $files -Algorithm SHA256
 
       - name: Upload test artifacts
