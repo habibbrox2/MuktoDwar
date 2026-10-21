@@ -186,7 +186,7 @@ async function main(): Promise<void> {
     if (_exists(lockPath)) {
       const pid = Number(_read(lockPath, 'utf8').trim());
       if (pid && isProcessAlive(pid)) {
-        try { (await import('node:child_process')).exec('start "" "http://127.0.0.1:8787/"', { windowsHide: true }); } catch { /* ignore */ }
+        try { const _cp = await import('node:child_process'); _cp.spawn('cmd', ['/c', 'start', '', 'http://127.0.0.1:8787/'], { windowsHide: true, detached: true, stdio: 'ignore' }).unref(); } catch { /* ignore */ }
         process.exit(0);
       }
     }
@@ -273,24 +273,11 @@ async function main(): Promise<void> {
     const browser = candidates.find((p) => existsSync(p));
     if (browser) {
       const userDataDir = `${process.env.LOCALAPPDATA || process.env.TEMP}\\MuktoDwarWebview`;
-      // Splash screen while the UI loads.
-      let splashChild: any = null;
-      try {
-        const { writeFileSync: _w } = await import('node:fs');
-        const { join: _j } = await import('node:path');
-        const _tmp = process.env.TEMP || process.env.TMP || '.';
-        const _splash = _j(_tmp, 'muktodwar-splash.html');
-        _w(_splash, '<!doctype html><html><head><meta charset="utf-8"><title>MuktoDwar</title><style>body{margin:0;background:#0B0F14;color:#E6EAF2;font-family:system-ui,sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh}img{width:96px;height:96px;margin-bottom:16px}.t{font-size:22px;font-weight:700}.s{margin-top:8px;color:#9AA4B2;font-size:13px}.spin{margin-top:24px;width:28px;height:28px;border:3px solid #2A2F3A;border-top-color:#7C3AED;border-radius:50%;animation:r 1s linear infinite}@keyframes r{to{transform:rotate(360deg)}}</style></head><body><img src="file:///C:/placeholder" onerror="this.style.display=&quot;none&quot;"><div class="t">MuktoDwar</div><div class="s">Starting local gateway…</div><div class="spin"></div></body></html>', 'utf8');
-        splashChild = spawn(browser, [`--user-data-dir=${userDataDir}`, `--app=file:///${_splash.replace(/\\/g, '/')}`, '--window-size=360,420'], { detached: false, stdio: 'ignore', windowsHide: false });
-      } catch { /* ignore */ }
-      setTimeout(() => {
-        if (splashChild) { try { splashChild.kill(); } catch { /* ignore */ } }
-        const child = spawn(browser, [`--user-data-dir=${userDataDir}`, `--app=${url}`, "--window-size=1280,800"], { detached: false, stdio: "ignore", windowsHide: false });
-        child.on("exit", () => { void shutdown("WINDOW_CLOSED"); });
-        child.on("error", () => { try { exec(`start "" "${url}"`, { windowsHide: true }); } catch { /* ignore */ } });
-      }, 1200);
+      const child = spawn(browser, [`--user-data-dir=${userDataDir}`, `--app=${url}`, "--window-size=1280,800"], { detached: false, stdio: "ignore", windowsHide: false });
+      child.on("exit", () => { void shutdown("WINDOW_CLOSED"); });
+      child.on("error", () => { try { spawn('cmd', ['/c', 'start', '', url], { windowsHide: true, detached: true, stdio: 'ignore' }).unref(); } catch { /* ignore */ } });
     } else {
-      exec(`start "" "${url}"`, { windowsHide: true });
+      spawn('cmd', ['/c', 'start', '', url], { windowsHide: true, detached: true, stdio: 'ignore' }).unref();
     }
   } catch {
     // Best effort: never fail startup because the browser could not open.

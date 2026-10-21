@@ -30,23 +30,39 @@ function findEditbin() {
     'C:\\Program Files (x86)\\Microsoft Visual Studio',
     'C:\\Program Files\\Microsoft Visual Studio',
   ];
-  for (const r of roots) {
-    if (!existsSync(r)) continue;
+  const wanted = 'editbin.exe';
+  // Search a bounded tree for editbin.exe. Visual Studio lays it out as
+  // <edition>\<component>\VC\Tools\MSVC\<toolset>\bin\Hostx64\x64\editbin.exe,
+  // where <component> may be BuildTools/Community/Professional/Enterprise.
+  const search = (dir, depth) => {
+    if (depth > 12) return null;
+    let entries;
     try {
-      const versions = readdirSync(r, { withFileTypes: true });
-      for (const v of versions) {
-        if (!v.isDirectory()) continue;
-        const vc = join(r, v.name, 'VC', 'Tools', 'MSVC');
-        if (!existsSync(vc)) continue;
-        const msvers = readdirSync(vc, { withFileTypes: true }).filter((d) => d.isDirectory());
-        for (const msver of msvers) {
-          const bin = join(vc, msver.name, 'bin', 'Hostx64', 'x64', 'editbin.exe');
-          if (existsSync(bin)) return bin;
-          const bin86 = join(vc, msver.name, 'bin', 'Hostx86', 'x86', 'editbin.exe');
-          if (existsSync(bin86)) return bin86;
-        }
+      entries = readdirSync(dir, { withFileTypes: true });
+    } catch {
+      return null;
+    }
+    const candidates = [];
+    for (const entry of entries) {
+      const full = join(dir, entry.name);
+      if (entry.isFile() && entry.name.toLowerCase() === wanted) {
+        candidates.push(full);
+      } else if (entry.isDirectory()) {
+        const nested = search(full, depth + 1);
+        if (nested) candidates.push(nested);
       }
-    } catch { /* ignore */ }
+    }
+    if (candidates.length === 0) return null;
+    return (
+      candidates.find((p) => p.includes('Hostx64\\x64')) ??
+      candidates.find((p) => p.includes('Hostx86\\x86')) ??
+      candidates[0]
+    );
+  };
+  for (const root of roots) {
+    if (!existsSync(root)) continue;
+    const found = search(root, 0);
+    if (found) return found;
   }
   return null;
 }
