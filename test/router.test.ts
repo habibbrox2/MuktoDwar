@@ -195,6 +195,73 @@ describe('Router', () => {
       const candidates = await router.candidates('');
       expect(candidates[0]?.model.id).toBe('model-b');
     });
+
+    it('falls back to the first servable model when no default is configured', async () => {
+      const config = configWith([provider({ id: 'p1' })], { defaultModel: '' });
+      const { router } = await makeRouter(config);
+      const candidates = await router.candidates('');
+      expect(candidates[0]?.model.id).toBe('model-a');
+    });
+  });
+
+  describe('providers that need no key', () => {
+    /** A provider whose free tier works without any credential. */
+    function keylessProvider(overrides: Partial<ProviderConfig> & { id: string }): ProviderConfig {
+      return {
+        kind: 'opencode',
+        label: overrides.id,
+        enabled: true,
+        anonymous: true,
+        priority: 100,
+        baseUrl: `https://${overrides.id}.example.test/v1`,
+        models: [{ id: 'model-a', free: true, verified: true, contextWindow: 8_000 }],
+        keys: [],
+        ...overrides,
+      };
+    }
+
+    it('lists the models of a keyless provider', async () => {
+      const config = configWith([keylessProvider({ id: 'p1' })]);
+      const { router } = await makeRouter(config);
+
+      expect(router.availableModels().map((entry) => entry.model.id)).toEqual(['model-a']);
+    });
+
+    it('routes to a keyless provider without a credential', async () => {
+      const config = configWith([keylessProvider({ id: 'p1' })]);
+      const { router } = await makeRouter(config);
+      stubFetch([new Response(completionBody(), { status: 200 })]);
+
+      const { candidate } = await router.complete(chatRequest('model-a'), callOptions);
+
+      expect(candidate.provider.id).toBe('p1');
+      expect(candidate.anonymous).toBe(true);
+      expect(fetchLog[0]?.authorization).toBeUndefined();
+    });
+
+    it('never routes to a provider that needs a key but has none', async () => {
+      const config = configWith([
+        provider({ id: 'p1', kind: 'groq', anonymous: false, keys: [] }),
+      ]);
+      const { router } = await makeRouter(config);
+
+      expect(router.availableModels()).toHaveLength(0);
+      expect(await router.candidates('model-a')).toHaveLength(0);
+    });
+
+    it('keeps a keyless provider out of the way when a keyed one serves the model', async () => {
+      const config = configWith([
+        keylessProvider({ id: 'free', priority: 50 }),
+        provider({ id: 'paid', priority: 10 }),
+      ]);
+      const { router } = await makeRouter(config);
+      stubFetch([new Response(completionBody(), { status: 200 })]);
+
+      const { candidate } = await router.complete(chatRequest('model-a'), callOptions);
+
+      expect(candidate.provider.id).toBe('paid');
+      expect(fetchLog[0]?.authorization).toBe('Bearer key-for-paid-secret');
+    });
   });
 
   describe('failover', () => {

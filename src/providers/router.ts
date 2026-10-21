@@ -29,12 +29,22 @@ import type {
 } from './types.js';
 import { SecretStore } from '../security/secret-store.js';
 
+/** The key id used for a provider that is called without any credential. */
+const ANONYMOUS_KEY_ID = 'anonymous';
+
 /** One candidate route: a provider, a model and a key. */
 export interface RouteCandidate {
   readonly provider: ProviderConfig;
   readonly model: ModelEntry;
   readonly keyId: string;
   readonly secretId: string;
+  /**
+   * True when the candidate carries no credential.
+   *
+   * A provider whose free tier needs no key is routable without one, and
+   * such a request must not look for a secret to decrypt.
+   */
+  readonly anonymous: boolean;
   /** The score the router computed. Higher is better. */
   readonly score: number;
   /** True when this candidate is a circuit-breaker probe. */
@@ -125,19 +135,40 @@ export class Router {
 
   /**
    * Every allowlisted, free model the gateway can serve, across all enabled
-   * providers that have at least one usable key.
+   * providers that can be called at all.
    */
   availableModels(): Array<{ providerId: string; providerLabel: string; model: ModelEntry }> {
     const models: Array<{ providerId: string; providerLabel: string; model: ModelEntry }> = [];
     for (const provider of this.deps.config.providers) {
       if (!provider.enabled) continue;
-      if (!this.hasUsableKey(provider)) continue;
+      if (!this.isRoutable(provider)) continue;
       for (const model of provider.models) {
         if (!model.free) continue;
         models.push({ providerId: provider.id, providerLabel: provider.label, model });
       }
     }
     return models;
+  }
+
+  /**
+   * True when the provider must be called with an API key.
+   *
+   * A provider whose free tier works without a key is routable without one:
+   * the request simply carries no credential.
+   */
+  private requiresCredential(provider: ProviderConfig): boolean {
+    return !provider.anonymous && catalogFor(provider.kind).requiresKey;
+  }
+
+  /**
+   * True when the provider can be called at all.
+   *
+   * A provider that needs a key needs at least one enabled key. A provider
+   * that does not need one is routable exactly as it is configured.
+   */
+  private isRoutable(provider: ProviderConfig): boolean {
+    if (!this.requiresCredential(provider)) return true;
+    return this.hasUsableKey(provider);
   }
 
   /** True when the provider has at least one enabled key. */
@@ -149,25 +180,31 @@ export class Router {
    * Resolve the model a request should use.
    *
    * An empty model falls back to the configured default. The default must
-   * itself be allowlisted and free.
+   * itself be allowlisted and free. When no default is configured, the first
+   * model the gateway can actually serve is used, so the gateway works out
+   * of the box. That fallback comes from the same free allowlist, so the
+   * free-only guarantee still holds.
    */
   private resolveRequestedModel(requested: string | undefined): string {
     const candidate = requested?.trim() || this.deps.config.routing.defaultModel.trim();
-    if (!candidate) {
-      throw new RoutingError(
-        'no_model_requested',
-        'No model was requested and no default model is configured.',
-        400,
-      );
-    }
-    return candidate;
+    if (candidate) return candidate;
+
+    const [fallback] = this.availableModels();
+    if (fallback) return fallback.model.id;
+
+    throw new RoutingError(
+      'no_model_requested',
+      'No model was requested, no default model is configured, and no free model is allowlisted.',
+      400,
+    );
   }
 
   /**
    * Compute the candidate list for a model, in ranked order.
    *
    * A candidate is only produced when the provider is enabled, the model is
-   * allowlisted *and* marked free, and the key is enabled.
+   * allowlisted *and* marked free, and the key is enabled. A provider whose
+   * free tier needs no key produces a candidate without a key.
    */
   async candidates(requestedModel: string): Promise<RouteCandidate[]> {
     const model = this.resolveRequestedModel(requestedModel);
@@ -183,8 +220,30 @@ export class Router {
         if (!entry.free) continue;
         if (normaliseModel(entry.id) !== target) continue;
 
-        for (const key of provider.keys) {
-          if (!key.enabled) continue;
+        const keys = provider.keys.filter((key) => key.enabled);
+        if (keys.length === 0) {
+          // A provider that needs no key is a candidate without one. A
+          // provider that needs a key but has none is skipped entirely, so
+          // the request is never sent without a credential.
+          if (this.requiresCredential(provider)) continue;
+
+          const available = this.deps.health.isAvailable(provider.id, ANONYMOUS_KEY_ID);
+          const probe = this.deps.health.isProbeEligible(provider.id, ANONYMOUS_KEY_ID);
+          if (!available && !probe) continue;
+
+          results.push({
+            provider,
+            model: entry,
+            keyId: ANONYMOUS_KEY_ID,
+            secretId: '',
+            anonymous: true,
+            score: this.score(provider, ANONYMOUS_KEY_ID, entry),
+            probe,
+          });
+          continue;
+        }
+
+        for (const key of keys) {
           const available = this.deps.health.isAvailable(provider.id, key.id);
           const probe = this.deps.health.isProbeEligible(provider.id, key.id);
           if (!available && !probe) continue;
@@ -194,6 +253,7 @@ export class Router {
             model: entry,
             keyId: key.id,
             secretId: key.secretId,
+            anonymous: false,
             score: this.score(provider, key.id, entry),
             probe,
           });
@@ -252,19 +312,22 @@ export class Router {
    *
    * The key is decrypted only when the candidate is actually attempted, so
    * a request that succeeds on its first choice decrypts exactly one key.
+   * An anonymous candidate carries no credential, so nothing is decrypted.
    */
   private async adapterFor(candidate: RouteCandidate): Promise<ProviderAdapter> {
     let apiKey: string | undefined;
-    try {
-      const resolved = await this.deps.secrets.get(candidate.secretId);
-      apiKey = resolved === null ? undefined : resolved;
-    } catch {
-      apiKey = undefined;
+    if (!candidate.anonymous) {
+      try {
+        const resolved = await this.deps.secrets.get(candidate.secretId);
+        apiKey = resolved === null ? undefined : resolved;
+      } catch {
+        apiKey = undefined;
+      }
     }
     const profile = profileFor(candidate.provider);
-    // An anonymous provider needs no key; a provider that requires one but
-    // has none must not be called with a blank credential.
-    if (profile.useBearer && !apiKey) {
+    // A provider that requires a key must never be called without one. A
+    // provider whose free tier needs no key is called exactly as it is.
+    if (this.requiresCredential(candidate.provider) && !apiKey) {
       throw new ProviderError('The provider key is not available.', {
         authFailure: true,
         retryable: false,
@@ -278,6 +341,17 @@ export class Router {
       profile,
       apiKey,
     });
+  }
+
+  /**
+   * The credential group of a candidate.
+   *
+   * Two candidates that share a credential are skipped together after an
+   * authentication failure. An anonymous candidate has no credential, so it
+   * is grouped per provider instead of per key.
+   */
+  private failureGroup(candidate: RouteCandidate): string {
+    return candidate.anonymous ? `anonymous:${candidate.provider.id}` : candidate.secretId;
   }
 
   /**
@@ -307,7 +381,7 @@ export class Router {
     const failedSecrets = new Set<string>();
 
     for (const candidate of candidates.slice(0, maxAttempts)) {
-      if (failedSecrets.has(candidate.secretId)) continue;
+      if (failedSecrets.has(this.failureGroup(candidate))) continue;
 
       try {
         const adapter = await this.adapterFor(candidate);
@@ -336,7 +410,7 @@ export class Router {
         if (providerError.authFailure) {
           // The credential is rejected. Retrying it, under this key or any
           // other that shares the secret, cannot succeed.
-          failedSecrets.add(candidate.secretId);
+          failedSecrets.add(this.failureGroup(candidate));
         }
         if (!providerError.retryable) {
           // A non-retryable failure will not improve with another attempt at
@@ -380,7 +454,7 @@ export class Router {
     const failedSecrets = new Set<string>();
 
     for (const candidate of candidates.slice(0, maxAttempts)) {
-      if (failedSecrets.has(candidate.secretId)) continue;
+      if (failedSecrets.has(this.failureGroup(candidate))) continue;
 
       try {
         const adapter = await this.adapterFor(candidate);
@@ -403,7 +477,7 @@ export class Router {
           keyId: candidate.keyId,
           reason: providerError.message.slice(0, 200),
         });
-        if (providerError.authFailure) failedSecrets.add(candidate.secretId);
+        if (providerError.authFailure) failedSecrets.add(this.failureGroup(candidate));
       }
     }
 
@@ -439,7 +513,7 @@ export class Router {
     const failedSecrets = new Set<string>();
 
     for (const candidate of candidates.slice(0, maxAttempts)) {
-      if (failedSecrets.has(candidate.secretId)) continue;
+      if (failedSecrets.has(this.failureGroup(candidate))) continue;
 
       try {
         const adapter = await this.adapterFor(candidate);
@@ -462,7 +536,7 @@ export class Router {
           keyId: candidate.keyId,
           reason: providerError.message.slice(0, 200),
         });
-        if (providerError.authFailure) failedSecrets.add(candidate.secretId);
+        if (providerError.authFailure) failedSecrets.add(this.failureGroup(candidate));
       }
     }
 
@@ -498,7 +572,7 @@ export class Router {
     const failedSecrets = new Set<string>();
 
     for (const candidate of candidates.slice(0, maxAttempts)) {
-      if (failedSecrets.has(candidate.secretId)) continue;
+      if (failedSecrets.has(this.failureGroup(candidate))) continue;
 
       try {
         const adapter = await this.adapterFor(candidate);
@@ -521,7 +595,7 @@ export class Router {
           keyId: candidate.keyId,
           reason: providerError.message.slice(0, 200),
         });
-        if (providerError.authFailure) failedSecrets.add(candidate.secretId);
+        if (providerError.authFailure) failedSecrets.add(this.failureGroup(candidate));
       }
     }
 
@@ -564,7 +638,7 @@ export class Router {
     const failedSecrets = new Set<string>();
 
     for (const candidate of candidates.slice(0, maxAttempts)) {
-      if (failedSecrets.has(candidate.secretId)) continue;
+      if (failedSecrets.has(this.failureGroup(candidate))) continue;
 
       try {
         const adapter = await this.adapterFor(candidate);
@@ -588,7 +662,7 @@ export class Router {
           keyId: candidate.keyId,
           reason: providerError.message.slice(0, 200),
         });
-        if (providerError.authFailure) failedSecrets.add(candidate.secretId);
+        if (providerError.authFailure) failedSecrets.add(this.failureGroup(candidate));
       }
     }
 
