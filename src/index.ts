@@ -116,23 +116,32 @@ async function rotateAdminToken(secrets: SecretStore): Promise<void> {
   console.log('');
 }
 
-/** Ensure Kilo and OpenCode providers exist and are enabled by default. */
+/**
+ * Ensure the default providers exist.
+ *
+ * Kilo serves a free catalogue to anonymous callers, so it ships enabled.
+ * OpenCode is added as well, but disabled: its free tier refuses calls that
+ * come from outside the OpenCode app, so enabling it by default would only
+ * produce failed requests.
+ */
 async function ensureDefaultProviders(configStore: ConfigStore): Promise<void> {
   const config = configStore.get();
   const existingIds = new Set(config.providers.map((p) => p.id));
-  const toAdd: string[] = [];
-  if (!existingIds.has('kilo')) toAdd.push('kilo');
-  if (!existingIds.has('opencode')) toAdd.push('opencode');
+  const defaults: Array<{ kind: string; enabled: boolean }> = [
+    { kind: 'kilo', enabled: true },
+    { kind: 'opencode', enabled: false },
+  ];
+  const toAdd = defaults.filter((entry) => !existingIds.has(entry.kind));
   if (toAdd.length === 0) return;
 
   await configStore.mutate((draft) => {
-    for (const kind of toAdd) {
-      const catalog = catalogFor(kind as never);
+    for (const entry of toAdd) {
+      const catalog = catalogFor(entry.kind as never);
       draft.providers.push({
-        id: kind,
-        kind: kind as never,
+        id: entry.kind,
+        kind: entry.kind as never,
         label: catalog.label,
-        enabled: true,
+        enabled: entry.enabled,
         priority: 100,
         anonymous: !catalog.requiresKey,
         models: catalog.models.map((m) => ({

@@ -17,6 +17,7 @@
     "test:watch": "vitest",
     "verify": "npm run typecheck && npm run test && npm run build",
     "brand:build": "node scripts/generate-brand-assets.mjs",
+    "sync:models": "node scripts/sync-models-dev.mjs",
     "site:build": "node scripts/build-site.mjs",
     "site:serve": "node scripts/build-site.mjs --serve"
   },

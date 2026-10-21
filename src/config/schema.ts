@@ -20,6 +20,7 @@ export const providerKindSchema = z.enum([
   'openrouter',
   'kilo',
   'opencode',
+  'opencodego',
   'requesty',
   'bazaarlink',
   'anyapi',
