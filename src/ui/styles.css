@@ -367,6 +367,15 @@ body {
 
 .notes { margin-bottom: 10px; }
 .notes .field__label { display: block; margin-bottom: 4px; }
+.notes__head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.notes__summary {
+  cursor: pointer;
+  font-size: 11px;
+  color: var(--text-dim);
+  margin: 4px 0 2px;
+  list-style: revert;
+}
+.notes__summary:hover { color: var(--text); }
 .notes__status {
   display: block;
   font-size: 11px;
@@ -376,7 +385,7 @@ body {
 .notes__status[data-ship-status="UNVERIFIED"] { color: var(--warn); }
 .notes__status[data-ship-status="BLOCKED"] { color: var(--bad); }
 .notes__list {
-  margin: 0;
+  margin: 4px 0 0;
   padding-left: 18px;
   font-size: 11px;
   color: var(--text-faint);
@@ -391,6 +400,31 @@ body {
 }
 
 .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+
+/*
+ * The allowlist is a bounded scroll area.
+ *
+ * The shadows are drawn with background layers that are attached to the
+ * scrollport, so they only appear on the side that still has content
+ * left. That is what tells the administrator the list continues.
+ */
+.chips--scroll {
+  max-height: 188px;
+  overflow-y: auto;
+  padding: 4px 8px 4px 4px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-sm);
+  background:
+    linear-gradient(var(--bg-raised) 30%, rgb(0 0 0 / 0)) top / 100% 18px no-repeat local,
+    linear-gradient(rgb(0 0 0 / 0), var(--bg-raised) 70%) bottom / 100% 18px no-repeat local,
+    radial-gradient(farthest-side at 50% 0, rgb(0 0 0 / 22%), rgb(0 0 0 / 0)) top / 100% 7px no-repeat scroll,
+    radial-gradient(farthest-side at 50% 100%, rgb(0 0 0 / 22%), rgb(0 0 0 / 0)) bottom / 100% 7px no-repeat scroll;
+}
+.chips--scroll[data-empty="true"] { border-style: dashed; }
+
+.filter-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.filter-row .field__input { flex: 1; min-width: 0; }
+.field__count { font-size: 11px; color: var(--text-faint); white-space: nowrap; font-variant-numeric: tabular-nums; }
 
 .chip {
   display: inline-flex;
@@ -444,6 +478,19 @@ body {
 
 .table tr:last-child td { border-bottom: 0; }
 
+/* The model allowlist is a dense table: one line per model. */
+.table--models td { padding: 6px 12px; vertical-align: middle; }
+.table--models .table__model { max-width: 0; width: 60%; }
+.table--models .table__model code {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text);
+  overflow-wrap: anywhere;
+  cursor: text;
+}
+.table--models td:nth-child(2) { color: var(--text-dim); white-space: nowrap; }
+.table--models td:nth-child(3) { width: 1%; white-space: nowrap; }
+
 /* ---------- tokens ---------- */
 
 .token-row {
@@ -488,13 +535,52 @@ body {
   background: var(--bg-raised);
   color: var(--text);
   padding: 0;
-  max-width: min(520px, calc(100vw - 32px));
+  max-width: min(600px, calc(100vw - 32px));
   width: 100%;
 }
 
 .dialog::backdrop { background: rgb(0 0 0 / .55); }
 
-.dialog__card { padding: 22px; display: flex; flex-direction: column; }
+/*
+ * The card scrolls when the form is taller than the window. The shadow
+ * layers are attached to the scrollport, so they appear only on the edge
+ * that still has content.
+ */
+.dialog__card {
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 56px);
+  overflow-y: auto;
+  background:
+    linear-gradient(var(--bg-raised) 30%, rgb(0 0 0 / 0)) top / 100% 20px no-repeat local,
+    linear-gradient(rgb(0 0 0 / 0), var(--bg-raised) 70%) bottom / 100% 20px no-repeat local,
+    radial-gradient(farthest-side at 50% 0, rgb(0 0 0 / 25%), rgb(0 0 0 / 0)) top / 100% 8px no-repeat scroll,
+    radial-gradient(farthest-side at 50% 100%, rgb(0 0 0 / 25%), rgb(0 0 0 / 0)) bottom / 100% 8px no-repeat scroll;
+}
+
+/* The action bar stays reachable while the form scrolls. */
+.dialog__actions--sticky {
+  position: sticky;
+  bottom: -22px;
+  margin: 14px -22px -22px;
+  padding: 12px 22px;
+  background: var(--bg-raised);
+  border-top: 1px solid var(--line);
+}
+
+/* The provider form is a two column grid, so the allowlist stays in view. */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 14px;
+}
+.form-grid .field--wide { grid-column: 1 / -1; }
+.form-grid .checkbox { margin-bottom: 0; }
+.form-grid .chips { margin-bottom: 0; }
+@media (max-width: 560px) {
+  .form-grid { grid-template-columns: 1fr; }
+}
 
 .dialog__title { margin: 0 0 16px; font-size: 16px; font-weight: 650; }
 

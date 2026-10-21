@@ -643,22 +643,17 @@ function renderModels() {
   }
 
   for (const entry of visible) {
-    const title = el('div', { class: 'row__title' }, [
-      el('span', { text: entry.model }),
-      el('span', { class: 'tag tag--ok', text: 'free' }),
-      entry.verified
-        ? el('span', { class: 'tag tag--ok', text: 'verified' })
-        : el('span', { class: 'tag tag--warn', text: 'unverified' }),
-    ]);
-
-    const meta = el('div', { class: 'row__meta' }, [
-      el('span', { text: entry.providerLabel }),
-    ]);
+    const status = entry.verified
+      ? el('span', { class: 'tag tag--ok', text: 'verified' })
+      : el('span', { class: 'tag tag--warn', text: 'unverified' });
 
     list.append(
-      el('li', { class: 'row' }, [
-        el('span', { class: 'row__icon', 'aria-hidden': 'true', text: '❖' }),
-        el('div', { class: 'row__main' }, [title, meta]),
+      el('tr', {}, [
+        el('td', { class: 'table__model' }, [
+          el('code', { title: entry.model, text: entry.model }),
+        ]),
+        el('td', { text: entry.providerLabel }),
+        el('td', {}, [status]),
       ]),
     );
   }
@@ -827,6 +822,9 @@ function openProviderDialog(provider) {
   renderProviderKeys(provider);
   $('provider-dialog').showModal();
   syncKindBehaviour();
+  // The allowlist only knows whether it overflows once the dialog is open
+  // and the list has been laid out.
+  updateModelListState();
 }
 
 $('provider-kind').addEventListener('change', () => {
@@ -954,6 +952,7 @@ async function fetchRemoteModels() {
     }
 
     const total = Number.isFinite(result.total) ? result.total : ids.length;
+    updateModelListState();
     toast(
       added > 0
         ? `Fetched ${total} model(s); ${added} added, unselected.`
@@ -1022,7 +1021,6 @@ function renderProviderNotes(catalog) {
   const lines = [];
   if (catalog.freeTerms) lines.push(catalog.freeTerms);
   for (const caveat of catalog.caveats ?? []) lines.push(caveat);
-  if (lines.length === 0) return;
 
   const status = {
     VERIFIED:
@@ -1032,17 +1030,36 @@ function renderProviderNotes(catalog) {
     BLOCKED:
       'Ship status: BLOCKED. The free tier exists but refuses calls from outside the provider\'s own client, so it cannot be served from this gateway.',
   }[catalog.shipStatus] ?? '';
-  container.append(
-    el('span', { class: 'field__label', text: 'Free tier notes' }),
-    el('span', {
-      class: 'notes__status',
-      'data-ship-status': catalog.shipStatus ?? 'UNVERIFIED',
-      text: status,
-    }),
-  );
-  const list = el('ul', { class: 'notes__list' });
-  for (const line of lines) list.append(el('li', { text: line }));
-  container.append(list);
+
+  const statusNode = $('provider-note-status');
+  if (statusNode) {
+    statusNode.textContent = status;
+    statusNode.dataset.shipStatus = catalog.shipStatus ?? 'UNVERIFIED';
+  }
+
+  const details = $('provider-notes-details');
+  if (details) details.hidden = lines.length === 0;
+
+  for (const line of lines) container.append(el('li', { text: line }));
+}
+
+/**
+ * Report how many models the allowlist holds and whether it overflows.
+ *
+ * The list is a bounded scroll area, so the count and the overflow state
+ * are what tell the administrator that there is more below the fold.
+ */
+function updateModelListState() {
+  const container = $('provider-models');
+  if (!container) return;
+  const chips = [...container.querySelectorAll('.chip')];
+  const shown = chips.filter((chip) => !chip.hidden).length;
+  const count = $('provider-model-count');
+  if (count) {
+    count.textContent = shown === chips.length ? `${chips.length} model(s)` : `${shown} of ${chips.length}`;
+  }
+  container.dataset.overflow = container.scrollHeight > container.clientHeight + 1 ? 'true' : 'false';
+  container.dataset.empty = chips.length === 0 ? 'true' : 'false';
 }
 
 function renderModelChips(provider) {
@@ -1062,6 +1079,7 @@ function renderModelChips(provider) {
         const id = chip.dataset.modelId ?? '';
         chip.hidden = q !== '' && !id.toLowerCase().includes(q);
       }
+      updateModelListState();
     };
   }
 
@@ -1100,6 +1118,8 @@ function renderModelChips(provider) {
     });
     container.append(input);
   }
+
+  updateModelListState();
 }
 
 const selectAllBtn = $('provider-select-all');

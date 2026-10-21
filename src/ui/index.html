@@ -154,7 +154,19 @@
             The gateway will only ever route to a model listed here with a free status confirmed.
           </p>
           <input id="model-search" class="field__input" type="search" placeholder="Filter by model or provider…" style="margin-bottom:10px" />
-          <ul class="list" id="model-list"></ul>
+          <div class="table-wrap">
+            <table class="table table--models">
+              <caption class="sr-only">Free models the gateway is allowed to route to</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Model</th>
+                  <th scope="col">Provider</th>
+                  <th scope="col">Status</th>
+                </tr>
+              </thead>
+              <tbody id="model-list"></tbody>
+            </table>
+          </div>
           <p class="empty" id="models-empty" hidden>No free models allowlisted yet.</p>
         </section>
 
@@ -371,59 +383,73 @@
       <form id="provider-form" method="dialog" class="dialog__card" autocomplete="off">
         <h2 id="provider-dialog-title" class="dialog__title"><span class="sym" aria-hidden="true">✚</span></h2>
 
-        <label class="field">
-          <span class="field__label">Provider</span>
-          <select id="provider-kind" class="field__input"></select>
-        </label>
+        <div class="form-grid">
+          <label class="field">
+            <span class="field__label">Provider</span>
+            <select id="provider-kind" class="field__input"></select>
+          </label>
 
-        <label class="field">
-          <span class="field__label">Label</span>
-          <input id="provider-label" class="field__input" required />
-        </label>
+          <label class="field">
+            <span class="field__label">Label</span>
+            <input id="provider-label" class="field__input" required />
+          </label>
 
-        <label class="field">
-          <span class="field__label">Identifier</span>
-          <input id="provider-id" class="field__input" required spellcheck="false" />
-        </label>
+          <label class="field">
+            <span class="field__label">Identifier</span>
+            <input id="provider-id" class="field__input" required spellcheck="false" />
+          </label>
 
-        <label class="field">
-          <span class="field__label">API key</span>
-          <input id="provider-key" class="field__input" type="password" spellcheck="false" placeholder="stored encrypted" />
-          <span class="field__hint">Leave blank to keep the existing key. Adding a value appends a new key.</span>
-        </label>
+          <label class="field">
+            <span class="field__label">Priority</span>
+            <input id="provider-priority" class="field__input" type="number" min="0" max="1000" value="100" />
+          </label>
 
-        <div id="provider-keys" class="chips"></div>
+          <label class="field field--wide">
+            <span class="field__label">API key</span>
+            <input id="provider-key" class="field__input" type="password" spellcheck="false" placeholder="stored encrypted" />
+            <span class="field__hint">Leave blank to keep the existing key. Adding a value appends a new key.</span>
+          </label>
 
-        <label class="field">
-          <span class="field__label">Custom API endpoint (override)</span>
-          <input id="provider-base-url" class="field__input" type="url" spellcheck="false" placeholder="https://api.example.com/v1" />
-          <span class="field__hint">Leave blank to use the provider default.</span>
-        </label>
+          <div id="provider-keys" class="chips field--wide"></div>
 
-        <label class="field">
-          <span class="field__label">Priority</span>
-          <input id="provider-priority" class="field__input" type="number" min="0" max="1000" value="100" />
-        </label>
+          <label class="field field--wide">
+            <span class="field__label">Custom API endpoint (override)</span>
+            <input id="provider-base-url" class="field__input" type="url" spellcheck="false" placeholder="https://api.example.com/v1" />
+            <span class="field__hint">Leave blank to use the provider default.</span>
+          </label>
 
-        <label class="checkbox">
-          <input id="provider-enabled" type="checkbox" />
-          <span class="field__label">Enabled</span>
-        </label>
+          <label class="checkbox">
+            <input id="provider-enabled" type="checkbox" />
+            <span class="field__label">Enabled</span>
+          </label>
 
-        <label class="checkbox">
-          <input id="provider-anonymous" type="checkbox" />
-          <span class="field__label">Send no key (anonymous free access)</span>
-        </label>
+          <label class="checkbox">
+            <input id="provider-anonymous" type="checkbox" />
+            <span class="field__label">Send no key (anonymous free access)</span>
+          </label>
+        </div>
 
         <fieldset class="fieldset">
           <legend>Free model allowlist</legend>
-          <div id="provider-caveats" class="notes"></div>
-          <input id="provider-model-search" class="field__input" type="search" placeholder="Filter models…" style="margin-bottom:8px" />
+          <div class="notes">
+            <div class="notes__head">
+              <span class="field__label">Free tier notes</span>
+              <span class="notes__status" id="provider-note-status"></span>
+            </div>
+            <details id="provider-notes-details">
+              <summary class="notes__summary">Free tier terms and caveats</summary>
+              <ul class="notes__list" id="provider-caveats"></ul>
+            </details>
+          </div>
+          <div class="filter-row">
+            <input id="provider-model-search" class="field__input" type="search" placeholder="Filter models…" />
+            <span class="field__count" id="provider-model-count"></span>
+          </div>
           <div class="dialog__actions" style="justify-content:flex-start;margin-bottom:6px">
             <button type="button" class="btn" id="provider-select-all">Select all free</button>
             <button type="button" class="btn" id="provider-clear-models">Clear</button>
           </div>
-          <div id="provider-models" class="chips"></div>
+          <div id="provider-models" class="chips chips--scroll"></div>
           <div class="dialog__actions" style="justify-content:flex-start;margin-top:6px">
             <button type="button" class="btn" id="provider-test-connection" aria-label="Test connection">
               Test connection
@@ -434,10 +460,11 @@
           </div>
           <p class="field__hint">
             Only models marked free can be selected. Unverified models are shown with a warning.
+            The list scrolls; the shadow marks the edge.
           </p>
         </fieldset>
 
-        <div class="dialog__actions">
+        <div class="dialog__actions dialog__actions--sticky">
           <button type="button" class="btn" id="provider-cancel" aria-label="Cancel">
           <span class="sym" aria-hidden="true">✗</span>
         </button>
