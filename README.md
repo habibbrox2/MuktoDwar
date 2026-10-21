@@ -51,10 +51,10 @@ npm run brand:build
 - 🖥️ **Local only** — binds to `127.0.0.1` and refuses to start on any other address. No cloud account, no external hosting, no telemetry, no auto-updates.
 - 🔌 **OpenAI-compatible** — works unchanged with the official OpenAI SDKs, OpenCode, PHP, JavaScript, and anything that speaks `POST /v1/chat/completions`.
 - 🔀 **Hybrid router** — combines your priority order, measured latency (EWMA), provider health, cooldown and circuit breaking.
-- 🆓 **Free-only** — providers ship **disabled**; models must be **explicitly allowlisted** and marked free by you.
+- 🆓 **Free-only** — every model must be **explicitly allowlisted** and marked free by you; a provider that needs no key is called anonymously, and there is no paid fallback.
 - 🔐 **Windows DPAPI secret storage** — API keys encrypted at rest with `CurrentUser` scope, **never** plaintext, fail-closed on any error.
 - 📡 **Streaming** — SSE with backpressure, streamed straight through without buffering the upstream response.
-- 🧪 **Tested** — 121 tests: unit, integration, security, routing, streaming, configuration.
+- 🧪 **Tested** — 154 tests: unit, integration, security, routing, streaming, configuration.
 
 ---
 
@@ -70,9 +70,10 @@ npm run brand:build
 ## Install and run
 
 ```powershell
-npm ci          # reproducible install from package-lock.json
-npm run verify  # typecheck + tests + build
-npm start       # serves on http://127.0.0.1:8787
+npm ci             # reproducible install from package-lock.json
+npm run verify     # typecheck + tests + build
+npm run sync:models # refresh the free-model catalogue from models.dev
+npm start          # serves on http://127.0.0.1:8787
 ```
 
 For development with hot reload:
@@ -262,7 +263,7 @@ npm run dev         # tsx watch, hot reload
 npm run build       # tsc -p tsconfig.build.json  → dist/
 npm start           # node dist/index.js
 npm run typecheck   # tsc --noEmit, strict
-npm test            # vitest run  (121 tests)
+npm test            # vitest run  (154 tests)
 npm run test:watch  # vitest watch
 npm run verify      # typecheck + test + build
 ```
@@ -383,7 +384,7 @@ Quick version: local-only bind, DPAPI `CurrentUser` at rest, constant-time auth,
 
 ## Provider status
 
-See [docs/providers.md](docs/providers.md) for the full verification matrix with official sources and the 2026-10-20 verification date.
+See [docs/providers.md](docs/providers.md) for the full verification matrix with official sources and the 2026-10-21 verification date.
 
 **Verified free (no card):** Gemini, Groq, SambaNova, Kilo, OpenCode, Requesty · **Local:** Ollama, LM Studio · **Ships disabled (status unverified):** BazaarLink, Zhipu, AnyAPI, Poolside, Mistral, OpenRouter, Cline, SiliconFlow · **Rejected:** Cerebras, GitHub Models, HuggingFace, DeepSeek, Together, Fireworks, AIML, and others with no qualifying free tier.
 
