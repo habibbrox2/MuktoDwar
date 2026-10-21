@@ -306,6 +306,17 @@ async function ensureGatewayToken() {
   return pgGatewayToken;
 }
 
+async function checkUpdate() {
+  try {
+    const res = await fetch('/admin/update-check', { credentials: 'same-origin' });
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data.latest && data.latest.tag && data.latest.tag !== 'v' + data.current) {
+      toast('Update available: ' + data.latest.tag, 'ok');
+    }
+  } catch { /* ignore */ }
+}
+
 async function loadSettings() {
   try {
     const data = await api('/admin/settings');

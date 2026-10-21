@@ -550,6 +550,13 @@ export async function registerAdminRoutes(
     });
   });
 
+  /** Check for a newer release on GitHub. */
+  app.get('/admin/update-check', async (request, reply) => {
+    if (!(await guard(request, reply))) return;
+    const latest = (globalThis as any).__muktodwarLatest ?? null;
+    reply.send({ current: '1.0.0', latest });
+  });
+
   /** Rotate the gateway token. The new value is returned exactly once. */
   app.post('/admin/tokens/gateway/rotate', async (request: FastifyRequest, reply: FastifyReply) => {
     if (!(await guard(request, reply))) return;

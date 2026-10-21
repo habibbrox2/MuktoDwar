@@ -155,6 +155,28 @@ function isProcessAlive(pid: number): boolean {
 }
 
 async function main(): Promise<void> {
+  // Set up file logging.
+  try {
+    const _fs = await import('node:fs');
+    const _logDir = (process.env.LOCALAPPDATA || process.env.TEMP || '.') + '\\MuktoDwar\\logs';
+    _fs.mkdirSync(_logDir, { recursive: true });
+    const _logFile = _logDir + '\\muktodwar-' + new Date().toISOString().slice(0, 10) + '.log';
+    const _origStdout = process.stdout.write.bind(process.stdout);
+    const _origStderr = process.stderr.write.bind(process.stderr);
+    process.stdout.write = (chunk: any, ...args: any[]) => { try { _fs.appendFileSync(_logFile, String(chunk)); } catch { /* ignore */ } return _origStdout(chunk, ...args); };
+    process.stderr.write = (chunk: any, ...args: any[]) => { try { _fs.appendFileSync(_logFile, String(chunk)); } catch { /* ignore */ } return _origStderr(chunk, ...args); };
+  } catch { /* ignore */ }
+
+  // Background update check (non-blocking).
+  (async () => {
+    try {
+      const res = await fetch('https://api.github.com/repos/habibbrox2/MuktoDwar/releases/latest', { headers: { 'User-Agent': 'MuktoDwar' } });
+      if (!res.ok) return;
+      const data = await res.json() as { tag_name?: string; html_url?: string };
+      (globalThis as any).__muktodwarLatest = { tag: data.tag_name, url: data.html_url };
+    } catch { /* ignore */ }
+  })();
+
   // Single-instance guard
   const { join: _join } = await import('node:path');
   const { existsSync: _exists, readFileSync: _read, writeFileSync: _write, mkdirSync: _mkdir } = await import('node:fs');
@@ -251,9 +273,22 @@ async function main(): Promise<void> {
     const browser = candidates.find((p) => existsSync(p));
     if (browser) {
       const userDataDir = `${process.env.LOCALAPPDATA || process.env.TEMP}\\MuktoDwarWebview`;
-      const child = spawn(browser, [`--user-data-dir=${userDataDir}`, `--app=${url}`, "--window-size=1280,800"], { detached: false, stdio: "ignore", windowsHide: false });
-      child.on("exit", () => { void shutdown("WINDOW_CLOSED"); });
-      child.on("error", () => { try { exec(`start "" "${url}"`, { windowsHide: true }); } catch { /* ignore */ } });
+      // Splash screen while the UI loads.
+      let splashChild: any = null;
+      try {
+        const { writeFileSync: _w } = await import('node:fs');
+        const { join: _j } = await import('node:path');
+        const _tmp = process.env.TEMP || process.env.TMP || '.';
+        const _splash = _j(_tmp, 'muktodwar-splash.html');
+        _w(_splash, '<!doctype html><html><head><meta charset="utf-8"><title>MuktoDwar</title><style>body{margin:0;background:#0B0F14;color:#E6EAF2;font-family:system-ui,sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh}img{width:96px;height:96px;margin-bottom:16px}.t{font-size:22px;font-weight:700}.s{margin-top:8px;color:#9AA4B2;font-size:13px}.spin{margin-top:24px;width:28px;height:28px;border:3px solid #2A2F3A;border-top-color:#7C3AED;border-radius:50%;animation:r 1s linear infinite}@keyframes r{to{transform:rotate(360deg)}}</style></head><body><img src="file:///C:/placeholder" onerror="this.style.display=&quot;none&quot;"><div class="t">MuktoDwar</div><div class="s">Starting local gateway…</div><div class="spin"></div></body></html>', 'utf8');
+        splashChild = spawn(browser, [`--user-data-dir=${userDataDir}`, `--app=file:///${_splash.replace(/\\/g, '/')}`, '--window-size=360,420'], { detached: false, stdio: 'ignore', windowsHide: false });
+      } catch { /* ignore */ }
+      setTimeout(() => {
+        if (splashChild) { try { splashChild.kill(); } catch { /* ignore */ } }
+        const child = spawn(browser, [`--user-data-dir=${userDataDir}`, `--app=${url}`, "--window-size=1280,800"], { detached: false, stdio: "ignore", windowsHide: false });
+        child.on("exit", () => { void shutdown("WINDOW_CLOSED"); });
+        child.on("error", () => { try { exec(`start "" "${url}"`, { windowsHide: true }); } catch { /* ignore */ } });
+      }, 1200);
     } else {
       exec(`start "" "${url}"`, { windowsHide: true });
     }
@@ -262,8 +297,28 @@ async function main(): Promise<void> {
   }
 }
 
-main().catch((error: unknown) => {
-  console.error('The gateway failed to start:');
+async function runWithCrashRecovery(): Promise<void> {
+  let attempts = 0;
+  while (true) {
+    try {
+      await main();
+      break;
+    } catch (error) {
+      attempts += 1;
+      console.error('The gateway crashed (attempt ' + attempts + '):');
+      console.error(error instanceof Error ? error.message : String(error));
+      if (attempts >= 5) {
+        console.error('Too many crashes, giving up.');
+        process.exit(1);
+      }
+      console.log('Restarting in 2 seconds...');
+      await new Promise((r) => setTimeout(r, 2000));
+    }
+  }
+}
+
+runWithCrashRecovery().catch((error: unknown) => {
+  console.error('Fatal:');
   console.error(error instanceof Error ? error.message : String(error));
   process.exit(1);
 });
