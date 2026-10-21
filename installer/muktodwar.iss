@@ -1,5 +1,5 @@
 #define MyAppName "MuktoDwar"
-#define MyAppVersion "1.1.0"
+#define MyAppVersion "1.1.1"
 #define MyAppPublisher "MuktoDwar"
 #define MyAppExeName "muktodwar.exe"
 

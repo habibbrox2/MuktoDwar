@@ -52,26 +52,22 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: muktodwar-windows
+          name: muktodwar-windows-${{ github.run_number }}
           path: |
             build/muktodwar.exe
             build/installer/*.exe
             build/installer/*.msi
 
-      - name: Compute release tag
-        id: tag
-        shell: pwsh
-        run: |
-          if ("${{ github.ref_type }}" -eq "tag") {
-            "tag=${{ github.ref_name }}" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
-          } else {
-            "tag=build-${{ github.run_number }}" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
-          }
-
+      # A GitHub release is published for a tag only.
+      #
+      # A push to main still builds the installers, but they stay workflow
+      # artifacts. Publishing a release per commit buried the real releases
+      # under a pile of build-N entries.
       - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.tag.outputs.tag }}
+          tag_name: ${{ github.ref_name }}
           files: |
             build/muktodwar.exe
             build/installer/*.exe

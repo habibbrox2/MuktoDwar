@@ -45,7 +45,7 @@ curl http://127.0.0.1:8787/health
 ```
 
 ```json
-{ "status": "ok", "version": "1.1.0", "uptimeSeconds": 12, "providers": 1, "models": 22 }
+{ "status": "ok", "version": "1.1.1", "uptimeSeconds": 12, "providers": 1, "models": 22 }
 ```
 
 No token is needed for `/health`. If it does not answer, the gateway is

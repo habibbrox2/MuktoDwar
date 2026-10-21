@@ -1,6 +1,6 @@
 {
   "name": "mukto-dwar",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "private": true,
   "description": "MuktoDwar (মুক্তদ্বার) — lightweight, free-only, local AI gateway for Windows with an OpenAI-compatible API.",
   "type": "module",
@@ -15,9 +15,11 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "verify": "npm run typecheck && npm run test && npm run build",
+    "verify": "npm run typecheck && npm run test && npm run build && npm run version:check",
     "brand:build": "node scripts/generate-brand-assets.mjs",
     "sync:models": "node scripts/sync-models-dev.mjs",
+    "sync:version": "node scripts/sync-version.mjs",
+    "version:check": "node scripts/sync-version.mjs --check",
     "site:build": "node scripts/build-site.mjs",
     "site:serve": "node scripts/build-site.mjs --serve"
   },

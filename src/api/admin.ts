@@ -25,6 +25,7 @@ import { adminTokenRotatedPath } from '../config/paths.js';
 import { pathExists } from '../config/paths.js';
 import { writeFileSync } from 'node:fs';
 import { deriveSecretId, generateToken } from '../security/auth.js';
+import { GATEWAY_VERSION } from '../version.js';
 import { sendError } from './routes.js';
 
 /** Dependencies of the admin routes. */
@@ -608,7 +609,7 @@ export async function registerAdminRoutes(
   app.get('/admin/update-check', async (request, reply) => {
     if (!(await guard(request, reply))) return;
     const latest = (globalThis as any).__muktodwarLatest ?? null;
-    reply.send({ current: '1.1.0', latest });
+    reply.send({ current: GATEWAY_VERSION, latest });
   });
 
   /** Rotate the gateway token. The new value is returned exactly once. */

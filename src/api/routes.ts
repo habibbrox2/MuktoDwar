@@ -14,6 +14,7 @@ import type { ChatCompletionRequest } from '../providers/types.js';
 import { SecretStore } from '../security/secret-store.js';
 import { assertGatewayToken } from '../security/auth.js';
 import type { GatewayConfig } from '../config/schema.js';
+import { GATEWAY_VERSION } from '../version.js';
 import { registerSecretValue } from '../security/redact.js';
 
 /** Schema for the chat completions request body. */
@@ -82,7 +83,7 @@ export async function registerPublicRoutes(
     const models = router.availableModels();
     return {
       status: 'ok',
-      version: '1.1.0',
+      version: GATEWAY_VERSION,
       uptimeSeconds: Math.round(process.uptime()),
       providers: config.providers.filter((provider) => provider.enabled).length,
       models: models.length,
