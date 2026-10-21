@@ -73,4 +73,6 @@ Don't:
 
 ## Credits
 
-- Made in Bangladesh 🇧🇩\n- Open source\n- Developer: Hr Habib\n
+- Made in Bangladesh 🇧🇩
+- Open source
+- Developer: Hr Habib

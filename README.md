@@ -404,30 +404,66 @@ See [docs/providers.md](docs/providers.md) for the full verification matrix with
 
 ## Building for Windows
 
-A GitHub Actions workflow (.github/workflows/release.yml) builds a single-file Windows executable and an Inno Setup installer on the windows-latest runner, triggered by version tags (*).
+A GitHub Actions workflow (`.github/workflows/release.yml`) builds the
+single-file Windows executable and both installers on the `windows-latest`
+runner, on every push to `main` and on version tags (`v*`).
 
 Local build:
 
-`powershell
+```powershell
+npm ci
 npm run build
 npm run build:sea
-`
+```
 
-The executable is written to uild/muktodwar.exe. Run the installer script with Inno Setup to produce uild/installer/MuktoDwar-Setup.exe.
+The executable is written to `build/muktodwar.exe`. One script then produces
+both installers from that single build:
+
+```powershell
+pwsh -File scripts/build-installers.ps1
+```
+
+- `build/installer/MuktoDwar-Setup.exe` — Inno Setup installer (end users)
+- `build/installer/MuktoDwar.msi` — Windows Installer package (IT / managed deployment)
+
+Both carry the same version, install into `C:\Program Files\MuktoDwar`, add the
+same Start Menu shortcut, register their own uninstaller in Add/Remove
+Programs, and keep your settings and API keys on upgrade and on uninstall.
+
+Want a build without publishing a release? Run the **Windows Test Build**
+workflow (`.github/workflows/windows-test-build.yml`) from the Actions tab. It
+uploads the executable and both installers as artifacts that expire in 7 days,
+and never creates a Release or a tag.
 
 ## Releases
 
-Windows builds are published automatically via GitHub Actions on every push to main and on version tags.
+Windows builds are published automatically via GitHub Actions on every push to
+main and on version tags.
 
 - **Latest release:** https://github.com/habibbrox2/MuktoDwar/releases/latest
 - **All releases:** https://github.com/habibbrox2/MuktoDwar/releases
 
-Each release includes:\n- muktodwar.exe — single-file executable\n- MuktoDwar-Setup.exe — Inno Setup installer\n- MuktoDwar.msi — Windows Installer package\n\nFull A-to-Z guide: [docs/deployment/windows-build-release.md](docs/deployment/windows-build-release.md).\n
+Each release includes:
+
+- `muktodwar.exe` — single-file executable
+- `MuktoDwar-Setup.exe` — Inno Setup installer
+- `MuktoDwar.msi` — Windows Installer package
+
+Full A-to-Z guide: [docs/deployment/windows-build-release.md](docs/deployment/windows-build-release.md).
+
+
 ## Credits
 
-- **Made in Bangladesh** 🇧🇩\n- **Open Source** — MIT License\n- **Developer:** Hr Habib\n- GitHub: https://github.com/habibbrox2\n
+- **Made in Bangladesh** 🇧🇩
+- **Open Source** — MIT License
+- **Developer:** Hr Habib
+- GitHub: https://github.com/habibbrox2
+
 ## Desktop application
 
 MuktoDwar ships as a true Windows desktop application:
 
-- Single-file muktodwar.exe (no console window) with the MuktoDwar brand icon.\n- Standalone window via Edge/Chrome app mode (no address bar); closing the window stops the server.\n- Inno Setup installer and MSI, both with uninstaller entry in Add/Remove Programs.\n- DPAPI-encrypted secrets, local-only binding, free-only routing.\n
+- Single-file muktodwar.exe (no console window) with the MuktoDwar brand icon.
+- Standalone window via Edge/Chrome app mode (no address bar); closing the window stops the server.
+- Inno Setup installer and MSI, both with uninstaller entry in Add/Remove Programs.
+- DPAPI-encrypted secrets, local-only binding, free-only routing.
