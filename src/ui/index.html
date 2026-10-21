@@ -137,8 +137,8 @@
             </button>
           </div>
           <p class="panel__note">
-            Every provider ships disabled with an empty allowlist. A model becomes usable only
-            when it is marked free and allowlisted.
+            Only models that are marked free and allowlisted are ever routed. A provider needs a
+            key, except the keyless free tiers that work without one.
           </p>
           <ul class="list" id="provider-list"></ul>
           <p class="empty" id="providers-empty" hidden>No providers configured yet.</p>
@@ -148,10 +148,12 @@
         <section id="panel-models" role="tabpanel" class="panel" hidden aria-labelledby="tab-models">
           <div class="panel__head">
             <h2><span class="sym" aria-hidden="true">✚</span> Free model allowlist</h2>
+            <span class="panel__count" id="model-search-count"></span>
           </div>
           <p class="panel__note">
             The gateway will only ever route to a model listed here with a free status confirmed.
           </p>
+          <input id="model-search" class="field__input" type="search" placeholder="Filter by model or provider…" style="margin-bottom:10px" />
           <ul class="list" id="model-list"></ul>
           <p class="empty" id="models-empty" hidden>No free models allowlisted yet.</p>
         </section>

@@ -1,5 +1,5 @@
 ﻿/**
- * Local AI Gateway â€” admin console.
+ * Local AI Gateway — admin console.
  *
  * Plain ES modules, no framework, no build step. The administrator token is
  * exchanged for an httpOnly session cookie at sign-in, so no secret is ever
@@ -247,6 +247,7 @@ for (const tab of tabs) {
 
 $('btn-refresh').addEventListener('click', () => void refreshAll());
 $('btn-lock').addEventListener('click', () => void lockConsole());
+$('model-search')?.addEventListener('input', () => renderModels());
 
 /* ------------------------------------------------------------------ *
  * Data loading
@@ -349,6 +350,12 @@ async function loadUsageInfo() {
       for (const m of data?.data ?? []) {
         modelSelect.append(el('option', { value: m.id, text: m.id }));
       }
+      // The curated auto model is the friendlier default than whichever id
+      // happens to sort first.
+      const preferred = [...modelSelect.options].find((option) =>
+        /\/free$|^kilo-auto/.test(option.value),
+      );
+      if (preferred) modelSelect.value = preferred.value;
     }
   } catch (error) {
     if (tokenInput) tokenInput.value = '';
@@ -375,6 +382,11 @@ async function loadPlaygroundModels() {
     for (const m of data?.data ?? []) {
       select.append(el('option', { value: m.id, text: m.id }));
     }
+    // The curated auto model is the friendlier default than whichever id
+    // happens to sort first.
+    const preferred = [...select.options].find((option) => /\/free$|^kilo-auto/.test(option.value));
+    if (preferred) select.value = preferred.value;
+    updateSnippets();
   } catch (error) {
     toast(error.message, 'bad');
   }
@@ -427,7 +439,7 @@ $('pg-send')?.addEventListener('click', async () => {
       const { value, done } = await reader.read();
       if (done) break;
       buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\\n');
+      const lines = buffer.split('\n');
       buffer = lines.pop() ?? '';
       for (const line of lines) {
         const trimmed = line.trim();
@@ -444,7 +456,7 @@ $('pg-send')?.addEventListener('click', async () => {
       }
     }
   } catch (error) {
-    if (error.name !== 'AbortError') output.textContent += `\\nError: ${error.message}`;
+    if (error.name !== 'AbortError') output.textContent += `\nError: ${error.message}`;
   } finally {
     const prompt = $('pg-message').value.trim();
     if (prompt && !pgHistory.includes(prompt)) {
@@ -486,7 +498,7 @@ const pgHistory = [];
 const pgHistorySelect = $('pg-history');
 function refreshPgHistory() {
   if (!pgHistorySelect) return;
-  pgHistorySelect.replaceChildren(el('option', { value: '', text: 'â€” select a previous prompt â€”' }));
+  pgHistorySelect.replaceChildren(el('option', { value: '', text: '— select a previous prompt —' }));
   for (const prompt of pgHistory.slice().reverse()) {
     pgHistorySelect.append(el('option', { value: prompt, text: prompt.slice(0, 60) }));
   }
@@ -526,7 +538,7 @@ function renderProviders() {
   if (providers.length === 0) {
     empty.replaceChildren();
     empty.append(
-      el('span', { class: 'sym', style: 'font-size:24px;display:block;margin-bottom:6px', 'aria-hidden': 'true', text: 'â¬¢' }),
+      el('span', { class: 'sym', style: 'font-size:24px;display:block;margin-bottom:6px', 'aria-hidden': 'true', text: '⬢' }),
       el('strong', { text: 'No providers yet' }),
       el('span', { text: 'Add your first provider to start routing requests.' }),
     );
@@ -535,12 +547,15 @@ function renderProviders() {
   for (const provider of providers) {
     const keys = provider.keys.length;
     const models = provider.models.length;
+    const catalog = (state.catalog?.providers ?? []).find(
+      (entry) => entry.kind === provider.kind,
+    );
 
     const icon = el('span', {
       class: 'row__icon',
       'data-state': provider.enabled ? 'on' : 'off',
       'aria-hidden': 'true',
-      text: provider.enabled ? 'â—‰' : 'â—‹',
+      text: provider.enabled ? '◉' : '○',
     });
 
     const title = el('div', { class: 'row__title' }, [
@@ -551,6 +566,18 @@ function renderProviders() {
         class: `tag ${provider.enabled ? 'tag--ok' : ''}`,
         text: provider.enabled ? 'enabled' : 'disabled',
       }),
+      catalog
+        ? el('span', {
+            class: `tag ${catalog.shipStatus === 'VERIFIED' ? 'tag--ok' : 'tag--warn'}`,
+            title:
+              catalog.shipStatus === 'VERIFIED'
+                ? 'The free tier, the payment-method rule and the model ids were confirmed.'
+                : catalog.shipStatus === 'BLOCKED'
+                  ? 'The free tier refuses calls from outside the provider.'
+                  : 'The free status could not be confirmed in full.',
+            text: catalog.shipStatus.toLowerCase(),
+          })
+        : null,
     ]);
 
     const meta = el('div', { class: 'row__meta' }, [
@@ -566,14 +593,14 @@ function renderProviders() {
         title: 'Edit',
         'aria-label': `Edit ${provider.label}`,
         onclick: () => openProviderDialog(provider),
-      }, [el('span', { class: 'sym', 'aria-hidden': 'true', text: 'âœŽ' })]),
+      }, [el('span', { class: 'sym', 'aria-hidden': 'true', text: '✎' })]),
       el('button', {
         type: 'button',
         class: 'icon-btn',
         title: 'Delete',
         'aria-label': `Delete ${provider.label}`,
         onclick: () => void deleteProvider(provider),
-      }, [el('span', { class: 'sym', 'aria-hidden': 'true', text: 'âœ•' })]),
+      }, [el('span', { class: 'sym', 'aria-hidden': 'true', text: '✕' })]),
     ]);
 
     list.append(el('li', { class: 'row' }, [icon, el('div', { class: 'row__main' }, [title, meta]), actions]));
@@ -585,17 +612,37 @@ function renderModels() {
   list.replaceChildren();
   const entries = state.status.models;
   const modelsEmpty = $('models-empty');
-  modelsEmpty.hidden = entries.length > 0;
-  if (entries.length === 0) {
+  const query = ($('model-search')?.value ?? '').trim().toLowerCase();
+  const visible = query
+    ? entries.filter(
+        (entry) =>
+          entry.model.toLowerCase().includes(query) ||
+          entry.providerLabel.toLowerCase().includes(query),
+      )
+    : entries;
+
+  const search = $('model-search-count');
+  if (search) {
+    search.textContent = query
+      ? `${visible.length} of ${entries.length} model(s)`
+      : `${entries.length} model(s)`;
+  }
+
+  modelsEmpty.hidden = visible.length > 0;
+  if (visible.length === 0) {
     modelsEmpty.replaceChildren();
     modelsEmpty.append(
-      el('span', { class: 'sym', style: 'font-size:24px;display:block;margin-bottom:6px', 'aria-hidden': 'true', text: 'â–' }),
-      el('strong', { text: 'No free models allowlisted' }),
-      el('span', { text: 'Allowlist models from the Providers tab to enable routing.' }),
+      el('span', { class: 'sym', style: 'font-size:24px;display:block;margin-bottom:6px', 'aria-hidden': 'true', text: '❖' }),
+      el('strong', { text: query ? 'No model matches the filter' : 'No free models allowlisted' }),
+      el('span', {
+        text: query
+          ? 'Clear the filter to see every allowlisted model.'
+          : 'Allowlist models from the Providers tab to enable routing.',
+      }),
     );
   }
 
-  for (const entry of entries) {
+  for (const entry of visible) {
     const title = el('div', { class: 'row__title' }, [
       el('span', { text: entry.model }),
       el('span', { class: 'tag tag--ok', text: 'free' }),
@@ -610,7 +657,7 @@ function renderModels() {
 
     list.append(
       el('li', { class: 'row' }, [
-        el('span', { class: 'row__icon', 'aria-hidden': 'true', text: 'â–' }),
+        el('span', { class: 'row__icon', 'aria-hidden': 'true', text: '❖' }),
         el('div', { class: 'row__main' }, [title, meta]),
       ]),
     );
@@ -637,7 +684,7 @@ function renderHealth() {
   if (rows.length === 0) {
     statusEmpty.replaceChildren();
     statusEmpty.append(
-      el('span', { class: 'sym', style: 'font-size:24px;display:block;margin-bottom:6px', 'aria-hidden': 'true', text: 'â—´' }),
+      el('span', { class: 'sym', style: 'font-size:24px;display:block;margin-bottom:6px', 'aria-hidden': 'true', text: '◴' }),
       el('strong', { text: 'No provider contacted yet' }),
       el('span', { text: 'Send a request through the gateway to see health data.' }),
     );
@@ -654,7 +701,7 @@ function renderHealth() {
         el('td', { text: row.providerId }),
         el('td', { text: row.keyId }),
         el('td', {}, [el('span', { class: `tag tag--${tone}`, text: stateText })]),
-        el('td', { text: row.latencyMs === null ? 'â€”' : `${Math.round(row.latencyMs)} ms` }),
+        el('td', { text: row.latencyMs === null ? '—' : `${Math.round(row.latencyMs)} ms` }),
         el('td', { text: String(row.successes) }),
         el('td', { text: String(row.failures) }),
       ]),
@@ -951,7 +998,7 @@ function syncKindBehaviour() {
       for (const chip of document.querySelectorAll('#provider-models .chip')) {
         chip.dataset.selected = 'true';
         chip.setAttribute('aria-checked', 'true');
-        if (chip.firstChild) chip.firstChild.textContent = 'âœ“';
+        if (chip.firstChild) chip.firstChild.textContent = '✓';
       }
     }
   }
@@ -1023,7 +1070,7 @@ function renderModelChips(provider) {
       model.contextWindow ? `context ${model.contextWindow}` : null,
       model.maxOutputTokens ? `max out ${model.maxOutputTokens}` : null,
       model.source,
-    ].filter(Boolean).join(' Â· ');
+    ].filter(Boolean).join(' · ');
     const chip = modelChip(model.id, {
       selected: selected.has(model.id),
       free: true,
