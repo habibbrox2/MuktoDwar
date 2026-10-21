@@ -709,6 +709,48 @@ function markProviderDirty() {
   providerDirty = true;
 }
 
+/**
+ * Show the keys a provider already has.
+ *
+ * A key can only be replaced or removed here; its value is never sent to
+ * the browser, so the chips carry the label and the state only.
+ */
+function renderProviderKeys(provider) {
+  const container = $('provider-keys');
+  if (!container) return;
+  container.replaceChildren();
+  if (!provider?.keys?.length) return;
+
+  for (const key of provider.keys) {
+    const chip = el('span', { class: 'chip', 'data-key-id': key.id }, [
+      el('span', { text: `${key.label ?? key.id} (${key.enabled ? 'enabled' : 'disabled'})` }),
+      el('button', {
+        type: 'button',
+        class: 'btn btn--danger',
+        text: 'Remove',
+        'data-remove-key': key.id,
+      }),
+    ]);
+    const button = chip.querySelector('[data-remove-key]');
+    button?.addEventListener('click', async () => {
+      const ok = await confirmDialog(`Remove key "${key.label ?? key.id}"?`, 'Remove key');
+      if (!ok) return;
+      try {
+        state.config = await api(
+          `/admin/providers/${encodeURIComponent(provider.id)}/keys/${encodeURIComponent(key.id)}`,
+          { method: 'DELETE' },
+        );
+        toast('Key removed.', 'ok');
+        const updated = state.config.providers.find((entry) => entry.id === provider.id);
+        renderProviderKeys(updated);
+      } catch (error) {
+        toast(error.message, 'bad');
+      }
+    });
+    container.append(chip);
+  }
+}
+
 function openProviderDialog(provider) {
   if (!state.catalog) {
     toast('Still loading providers. Please wait.', 'bad');
@@ -756,59 +798,125 @@ async function testConnection() {
       body: JSON.stringify({ kind, baseUrl: baseUrl || undefined, apiKey: apiKey || undefined }),
     });
     if (result.ok) toast(`Connected. ${result.modelCount} model(s) available.`, 'ok');
-    else toast(`Connection returned status ${result.status}.`, 'bad');
+    else toast(result.detail ? `Connection failed. ${result.detail}` : `Connection returned status ${result.status}.`, 'bad');
   } catch (error) {
     toast(error.message, 'bad');
   }
 }
 
+/**
+ * Build one model chip for the allowlist.
+ *
+ * The second child always holds the model id: the save handler and the
+ * filter read the id from there.
+ */
+function modelChip(id, options = {}) {
+  const selected = options.selected === true;
+  const verified = options.verified === true;
+  const tags = [];
+  if (!verified) tags.push(el('span', { class: 'tag tag--warn', text: 'unverified' }));
+  if (options.tag) tags.push(el('span', { class: 'tag', text: options.tag }));
+  const chip = el('span', {
+    class: 'chip',
+    role: 'checkbox',
+    tabindex: '0',
+    'data-model-id': id,
+    'aria-checked': String(selected),
+    'data-selected': String(selected),
+    // Only catalogue models are known to be free. A fetched model is not,
+    // so it is never selected by "Select all free".
+    'data-free': String(options.free === true),
+    'data-unverified': String(!verified),
+    title: options.title ?? '',
+  }, [
+    el('span', { 'aria-hidden': 'true', text: selected ? '\u2713' : '\u25CB' }),
+    el('span', { text: id }),
+    ...tags,
+  ]);
+
+  const toggle = () => {
+    const next = chip.dataset.selected !== 'true';
+    chip.dataset.selected = String(next);
+    chip.setAttribute('aria-checked', String(next));
+    chip.firstChild.textContent = next ? '\u2713' : '\u25CB';
+  };
+  chip.addEventListener('click', toggle);
+  chip.addEventListener('keydown', (event) => {
+    if (event.key === ' ' || event.key === 'Enter') {
+      event.preventDefault();
+      toggle();
+    }
+  });
+
+  return chip;
+}
+
+/**
+ * Fetch the provider's own model list and add it to the allowlist.
+ *
+ * The fetched models are added next to the catalogue ones instead of
+ * replacing them, and they arrive unselected: the gateway only serves a
+ * model once the administrator has confirmed it is free.
+ */
 async function fetchRemoteModels() {
   const kind = $('provider-kind').value;
   const baseUrl = $('provider-base-url').value.trim();
   const apiKey = $('provider-key').value.trim();
+  const button = $('provider-fetch-models');
+  if (button) button.disabled = true;
   try {
     const result = await api('/admin/providers/test-connection', {
       method: 'POST',
       body: JSON.stringify({ kind, baseUrl: baseUrl || undefined, apiKey: apiKey || undefined }),
     });
-    if (!result.ok || !Array.isArray(result.models) || result.models.length === 0) {
-      toast('No remote models returned.', 'bad');
+    if (!result.ok) {
+      toast(
+        result.detail
+          ? `The provider did not return a model list. ${result.detail}`
+          : `The provider did not return a model list (HTTP ${result.status}).`,
+        'bad',
+      );
       return;
     }
-    const container = $('provider-models');
-    container.replaceChildren();
-    const selected = new Set();
-    for (const id of result.models) {
-      const chip = el('span', {
-        class: 'chip',
-        role: 'checkbox',
-        tabindex: '0',
-        'aria-checked': 'false',
-        'data-selected': 'false',
-        'data-unverified': 'true',
-      }, [
-        el('span', { 'aria-hidden': 'true', text: 'â—‹' }),
-        el('span', { text: id }),
-        el('span', { class: 'tag tag--warn', text: 'remote' }),
-      ]);
-      const toggle = () => {
-        const next = chip.dataset.selected !== 'true';
-        chip.dataset.selected = String(next);
-        chip.setAttribute('aria-checked', String(next));
-        chip.firstChild.textContent = next ? 'âœ“' : 'â—‹';
-      };
-      chip.addEventListener('click', toggle);
-      chip.addEventListener('keydown', (event) => {
-        if (event.key === ' ' || event.key === 'Enter') {
-          event.preventDefault();
-          toggle();
-        }
-      });
-      container.append(chip);
+    const ids = Array.isArray(result.models) ? result.models : [];
+    if (ids.length === 0) {
+      toast('The provider returned an empty model list.', 'bad');
+      return;
     }
-    toast(`Fetched ${result.models.length} remote model(s).`, 'ok');
+
+    const container = $('provider-models');
+    const known = new Set(
+      [...container.querySelectorAll('.chip')].map((chip) => chip.dataset.modelId),
+    );
+    const manual = container.querySelector('#manual-model');
+    let added = 0;
+    for (const id of ids) {
+      if (known.has(id)) continue;
+      known.add(id);
+      const chip = modelChip(id, {
+        selected: false,
+        free: false,
+        verified: false,
+        tag: 'remote',
+        title:
+          'Fetched from the provider. The free status is not verified here, so confirm it with the provider before selecting it.',
+      });
+      if (manual) container.insertBefore(chip, manual);
+      else container.append(chip);
+      added += 1;
+    }
+
+    const total = Number.isFinite(result.total) ? result.total : ids.length;
+    toast(
+      added > 0
+        ? `Fetched ${total} model(s); ${added} added, unselected.`
+        : `Fetched ${total} model(s); all of them were already listed.`,
+      'ok',
+    );
   } catch (error) {
     toast(error.message, 'bad');
+  } finally {
+    if (button) button.disabled = false;
   }
 }
 
@@ -831,6 +939,8 @@ function syncKindBehaviour() {
     anonymousBox.hidden = false;
   }
 
+  renderProviderNotes(catalog);
+
   // Preselect the label and id for a new provider.
   const isCustom = kind === 'custom';
   if (!state.editing) {
@@ -849,6 +959,43 @@ function syncKindBehaviour() {
   // Custom providers need manual name/id/model; built-ins are auto-filled.
   $('provider-label').disabled = !isCustom && !state.editing;
   $('provider-id').disabled = Boolean(state.editing) || !isCustom;
+}
+
+/**
+ * Show what the catalogue knows about the selected provider.
+ *
+ * The free terms and the caveats are the difference between "this provider
+ * is free" and "this provider is free, for now, with these limits".
+ */
+function renderProviderNotes(catalog) {
+  const container = $('provider-caveats');
+  if (!container) return;
+  container.replaceChildren();
+
+  const lines = [];
+  if (catalog.freeTerms) lines.push(catalog.freeTerms);
+  for (const caveat of catalog.caveats ?? []) lines.push(caveat);
+  if (lines.length === 0) return;
+
+  const status = {
+    VERIFIED:
+      'Ship status: VERIFIED. The free tier, the payment-method rule and the model ids were confirmed against the source recorded on each model.',
+    UNVERIFIED:
+      'Ship status: UNVERIFIED. One of the three could not be confirmed, so this provider ships disabled.',
+    BLOCKED:
+      'Ship status: BLOCKED. The free tier exists but refuses calls from outside the provider\'s own client, so it cannot be served from this gateway.',
+  }[catalog.shipStatus] ?? '';
+  container.append(
+    el('span', { class: 'field__label', text: 'Free tier notes' }),
+    el('span', {
+      class: 'notes__status',
+      'data-ship-status': catalog.shipStatus ?? 'UNVERIFIED',
+      text: status,
+    }),
+  );
+  const list = el('ul', { class: 'notes__list' });
+  for (const line of lines) list.append(el('li', { text: line }));
+  container.append(list);
 }
 
 function renderModelChips(provider) {
@@ -877,34 +1024,12 @@ function renderModelChips(provider) {
       model.maxOutputTokens ? `max out ${model.maxOutputTokens}` : null,
       model.source,
     ].filter(Boolean).join(' Â· ');
-    const chip = el('span', {
-      class: 'chip',
-      role: 'checkbox',
-      tabindex: '0',
-      'data-model-id': model.id,
-      'aria-checked': String(selected.has(model.id)),
-      'data-selected': String(selected.has(model.id)),
-      'data-unverified': String(!model.verified),
+    const chip = modelChip(model.id, {
+      selected: selected.has(model.id),
+      free: true,
+      verified: model.verified === true,
+      tag: model.contextWindow ? `${Math.round(model.contextWindow / 1000)}k` : null,
       title: meta,
-    }, [
-      el('span', { 'aria-hidden': 'true', text: selected.has(model.id) ? '\u2713' : '\u25CB' }),
-      el('span', { text: model.id }),
-      model.verified ? null : el('span', { class: 'tag tag--warn', text: 'unverified' }),
-      model.contextWindow ? el('span', { class: 'tag', text: `${Math.round(model.contextWindow / 1000)}k` }) : null,
-    ]);
-
-    const toggle = () => {
-      const next = chip.dataset.selected !== 'true';
-      chip.dataset.selected = String(next);
-      chip.setAttribute('aria-checked', String(next));
-      chip.firstChild.textContent = next ? '\u2713' : '\u25CB';
-    };
-    chip.addEventListener('click', toggle);
-    chip.addEventListener('keydown', (event) => {
-      if (event.key === ' ' || event.key === 'Enter') {
-        event.preventDefault();
-        toggle();
-      }
     });
 
     container.append(chip);
@@ -934,8 +1059,12 @@ const selectAllBtn = $('provider-select-all');
 const clearModelsBtn = $('provider-clear-models');
 if (selectAllBtn) {
   selectAllBtn.addEventListener('click', () => {
+    // Only the catalogue models are known to be free. A model fetched from
+    // the provider has to be confirmed by the administrator first, so it is
+    // never selected in bulk.
     for (const chip of document.querySelectorAll('#provider-models .chip')) {
       if (chip.hidden) continue;
+      if (chip.dataset.free !== 'true') continue;
       chip.dataset.selected = 'true';
       chip.setAttribute('aria-checked', 'true');
       chip.firstChild.textContent = '\u2713';

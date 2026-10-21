@@ -165,6 +165,22 @@ describe('public API', () => {
       const payload = response.json() as { data: Array<{ id: string }> };
       expect(payload.data.map((m) => m.id)).toEqual(['model-a']);
     });
+
+    it('lists the models of a provider that needs no key', async () => {
+      const { ctx } = await buildConfiguredApp([
+        provider({ id: 'p1', kind: 'opencode', anonymous: true, keys: [] }),
+      ]);
+      const response = await ctx.app.app.inject({
+        method: 'GET',
+        url: '/v1/models',
+        headers: authHeaders,
+      });
+
+      expect(response.statusCode).toBe(200);
+      const payload = response.json() as { data: Array<{ id: string; owned_by: string }> };
+      expect(payload.data.map((m) => m.id)).toEqual(['model-a']);
+      expect(payload.data[0]?.owned_by).toBe('p1');
+    });
   });
 
   describe('chat completions', () => {
@@ -546,6 +562,59 @@ describe('public API', () => {
         headers: newHeaders,
       });
       expect(second.statusCode).toBe(200);
+    });
+
+    it('lists the remote models of a provider from its catalogue url', async () => {
+      const { ctx } = await buildConfiguredApp([provider({ id: 'p1' })]);
+      stubFetch([
+        new Response(JSON.stringify({ data: [{ id: 'model-a' }, { id: 'model-b' }] }), {
+          status: 200,
+        }),
+      ]);
+
+      const response = await ctx.app.app.inject({
+        method: 'POST',
+        url: '/admin/providers/test-connection',
+        headers: { ...adminHeaders, origin: 'http://127.0.0.1:8787' },
+        payload: { kind: 'opencode' },
+      });
+
+      expect(response.statusCode).toBe(200);
+      const payload = response.json() as {
+        ok: boolean;
+        url: string;
+        models: string[];
+        total: number;
+      };
+      expect(payload.ok).toBe(true);
+      // OpenCode publishes its model list next to the inference API, not
+      // next to the chat endpoint.
+      expect(payload.url).toBe('https://opencode.ai/inference/v1/models');
+      expect(payload.models).toEqual(['model-a', 'model-b']);
+      expect(payload.total).toBe(2);
+      expect(fetchCalls[0]?.url).toBe('https://opencode.ai/inference/v1/models');
+    });
+
+    it('explains why a provider returned no model list', async () => {
+      const { ctx } = await buildConfiguredApp([provider({ id: 'p1' })]);
+      stubFetch([
+        new Response(JSON.stringify({ error: { message: 'Unknown endpoint' } }), {
+          status: 404,
+        }),
+      ]);
+
+      const response = await ctx.app.app.inject({
+        method: 'POST',
+        url: '/admin/providers/test-connection',
+        headers: { ...adminHeaders, origin: 'http://127.0.0.1:8787' },
+        payload: { kind: 'opencode' },
+      });
+
+      expect(response.statusCode).toBe(200);
+      const payload = response.json() as { ok: boolean; status: number; detail: string };
+      expect(payload.ok).toBe(false);
+      expect(payload.status).toBe(404);
+      expect(payload.detail).toContain('Unknown endpoint');
     });
   });
 });

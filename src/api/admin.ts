@@ -36,6 +36,30 @@ export interface AdminRouteDependencies {
   readonly getRouter: () => Router;
 }
 
+/** How many remote model ids are sent to the console in one response. */
+const MAX_REMOTE_MODELS = 200;
+
+/**
+ * Describe an upstream failure in one line.
+ *
+ * The upstream's own message is the useful part: it says what is actually
+ * wrong, whether that is a missing key, a wrong path or a rejected
+ * account.
+ */
+function describeUpstreamFailure(status: number, body: string): string {
+  let message = '';
+  try {
+    const parsed = JSON.parse(body) as { error?: { message?: string }; message?: string };
+    message = parsed?.error?.message ?? parsed?.message ?? '';
+  } catch {
+    message = '';
+  }
+  if (!message) message = body.replace(/\s+/g, ' ').trim().slice(0, 200);
+  return message
+    ? `HTTP ${status}: ${message.slice(0, 300)}`
+    : `HTTP ${status}`;
+}
+
 /** Schema for the provider create/update payload. */
 const providerPayloadSchema = providerConfigSchema.partial({
   id: true,
@@ -135,18 +159,27 @@ export async function registerAdminRoutes(
     reply.send({ ok: true });
   });
 
-  /** Test a provider connection and optionally list its remote models. */
+  /**
+   * Test a provider connection and list its remote models.
+   *
+   * The catalogue knows where each provider publishes its model list. A
+   * custom endpoint override always derives the list from the base URL,
+   * because the administrator has pointed the gateway somewhere else.
+   */
   app.post('/admin/providers/test-connection', async (request: FastifyRequest, reply: FastifyReply) => {
     if (!(await guard(request, reply))) return;
     const body = (request.body ?? {}) as { kind?: string; baseUrl?: string; apiKey?: string };
     const kind = body.kind;
     const catalog = kind ? catalogFor(kind as never) : null;
-    const base = (body.baseUrl && body.baseUrl.trim()) || catalog?.baseUrl || '';
+    const override = (body.baseUrl ?? '').trim();
+    const base = override || catalog?.baseUrl || '';
     if (!base) {
       reply.code(400).send({ error: { message: 'No base URL available for this provider.', type: 'bad_request' } });
       return;
     }
-    const url = base.replace(/\/+$/, '') + '/models';
+    const url = !override && catalog?.modelsUrl
+      ? catalog.modelsUrl
+      : base.replace(/\/+$/, '') + '/models';
     const headers: Record<string, string> = { accept: 'application/json' };
     if (body.apiKey) headers.authorization = `Bearer ${body.apiKey}`;
     try {
@@ -162,8 +195,15 @@ export async function registerAdminRoutes(
       reply.send({
         ok: response.ok,
         status: response.status,
+        url,
         modelCount: ids.length,
-        models: ids.slice(0, 50),
+        // The full list can run to several hundred entries, so only the
+        // first ones are sent and the count tells the console how many
+        // there are in total.
+        models: ids.slice(0, MAX_REMOTE_MODELS),
+        total: ids.length,
+        // The upstream's own words, so a failure can be explained.
+        detail: response.ok ? null : describeUpstreamFailure(response.status, text),
       });
     } catch (error) {
       reply.code(502).send({
@@ -235,12 +275,13 @@ export async function registerAdminRoutes(
           kind,
           label: catalog.label,
           baseUrl: catalog.baseUrl,
+          modelsUrl: catalog.modelsUrl ?? null,
           requiresKey: catalog.requiresKey,
           freeWithoutCard: catalog.freeWithoutCard,
           freeTerms: catalog.freeTerms,
           caveats: catalog.caveats,
           docsUrl: catalog.docsUrl,
-          unverified: catalog.unverified,
+          shipStatus: catalog.shipStatus,
           models: catalog.models.map((model) => ({
             id: model.id,
             free: model.free,
@@ -367,6 +408,19 @@ export async function registerAdminRoutes(
       if (base.enabled && catalog.requiresKey && !base.anonymous && base.keys.length === 0) {
         reply.code(400).send({
           error: { message: 'Add an API key before enabling this provider.' },
+        });
+        return;
+      }
+
+      // A base URL that still holds a placeholder cannot work. The most
+      // common one is the Cloudflare account id, which only the
+      // administrator knows.
+      if (base.baseUrl && base.baseUrl.includes('YOUR_ACCOUNT_ID')) {
+        reply.code(400).send({
+          error: {
+            message:
+              'The base URL still contains the YOUR_ACCOUNT_ID placeholder. Replace it with the real account id before saving.',
+          },
         });
         return;
       }
