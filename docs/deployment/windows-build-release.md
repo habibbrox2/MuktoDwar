@@ -62,15 +62,30 @@ Triggers:
 - Manual `workflow_dispatch`.
 
 Steps performed on `windows-latest`:
-1. Checkout + setup Node 22.
+1. Checkout + setup Node 26.
 2. `npm ci` and `npm run verify`.
-3. `npm run build:sea` -> `build/muktodwar.exe`.
+3. `npm run build:sea` -> `build/muktodwar.exe` (GUI subsystem: no console window).
 4. Assemble `build/app/` (exe + ui + assets + dist).
 5. Inno Setup -> `build/installer/MuktoDwar-Setup.exe`.
 6. WiX heat/candle/light -> `build/installer/MuktoDwar.msi`.
 7. Upload artifacts.
 8. Compute release tag (`v*` tag name, or `build-<run_number>` for branch pushes).
 9. Create GitHub Release with assets: `muktodwar.exe`, `MuktoDwar-Setup.exe`, `MuktoDwar.msi`.
+
+Both installers are produced from the **same** application build and share the
+same version, install location, Start Menu shortcut and uninstall policy. The
+Inno Setup `.exe` is the recommended installer for end users; the WiX `.msi` is
+the equivalent package for IT / managed deployment.
+
+## 6b. Test build without publishing (manual)
+
+Workflow: `.github/workflows/windows-test-build.yml`
+
+Triggers only on `workflow_dispatch` (Actions -> "Windows Test Build" -> Run
+workflow). It runs the same build and both installer steps, then uploads
+`muktodwar.exe`, the Inno Setup installer and the `.msi` as GitHub Actions
+artifacts (7-day retention). It never creates a Release, a version tag, or a
+production deployment, so it can be run freely for testing.
 
 ## 7. Create a versioned release (tag)
 
@@ -99,12 +114,12 @@ Every push to `main` automatically builds and publishes a release tagged `build-
 1. Download the installer (`.exe` or `.msi`) from the Releases page.
 2. Run the installer; it installs to `C:\Program Files\MuktoDwar\`.
 3. Launch MuktoDwar from the Start Menu / desktop shortcut.
-4. The gateway starts on `http://127.0.0.1:8787` and opens the admin dashboard in the browser.
-5. On first run, use the administrator token printed in the console (or displayed on the login page until rotated).
+4. The gateway starts on `http://127.0.0.1:8787` and opens the admin dashboard as a standalone window.
+5. On first run, use the administrator token shown on the login gate until it is rotated.
 
 ## 11. Secrets / config location
 
-Installed app stores config and DPAPI-encrypted secrets under `%LOCALAPPDATA%\MuktoDwar\`. Uninstalling does not remove user data by default.
+Installed app stores config and DPAPI-encrypted secrets under `%LOCALAPPDATA%\LocalAIGateway\`, and logs under `%LOCALAPPDATA%\MuktoDwar\logs\`. Uninstalling does not remove user data by default, so an upgrade keeps settings and API keys.
 
 ## 12. Troubleshooting
 
