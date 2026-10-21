@@ -6,8 +6,8 @@ This guide covers the full lifecycle for building MuktoDwar as a Windows applica
 
 - Node.js >= 22.12 (for SEA build).
 - npm ci dependencies installed.
-- (Local MSI build) WiX Toolset v3.11 on PATH.
-- (Local installer build) Inno Setup 6 on PATH.
+- (Local installer build) Inno Setup 6 — `choco install innosetup -y`.
+- (Local MSI build) WiX Toolset v3 — `choco install wixtoolset -y`.
 
 ## 2. Local development
 
@@ -32,25 +32,45 @@ The SEA build copies the Node binary, injects the compiled app blob, and writes 
 build\muktodwar.exe
 ```
 
-## 4. Build installer (Inno Setup)
+## 4. Build the installers (one script, two packages)
+
+Both installers come from the **same** application build and follow the **same**
+installation policy:
+
+| Topic                | Decision                                          |
+| -------------------- | ------------------------------------------------- |
+| Primary installer    | `MuktoDwar-Setup.exe` (Inno Setup)                |
+| Alternative package  | `MuktoDwar.msi` (WiX) — for IT / managed rollout  |
+| Application version  | `1.0.0` in both                                   |
+| Install location     | `C:\Program Files\MuktoDwar` in both              |
+| Start Menu shortcut  | `MuktoDwar` in both                               |
+| Uninstall            | Each package manages itself; both register an entry in Add/Remove Programs |
+| User settings & keys | Kept on upgrade and on uninstall (state lives in `%LOCALAPPDATA%\LocalAIGateway`, outside the install directory) |
+| Release              | Both are published as assets of the same release   |
+
+Assemble the app folder, then build both packages with one command:
+
+```powershell
+npm run build
+npm run build:sea
+# copy build/muktodwar.exe, src/ui, assets, scripts and dist into build/app
+pwsh -File scripts/build-installers.ps1
+```
+
+The script locates Inno Setup and the WiX Toolset, builds
+`build/installer/MuktoDwar-Setup.exe` and `build/installer/MuktoDwar.msi`, and
+verifies that the MSI carries an embedded cabinet (a loose `.cab` next to the
+`.msi` would break managed deployment).
+
+Build them by hand if you prefer:
 
 ```powershell
 & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer/muktodwar.iss
-```
-
-Output: `build/installer/MuktoDwar-Setup.exe`.
-
-## 5. Build MSI (WiX)
-
-Assemble the app folder first, then:
-
-```powershell
 heat dir build/app -cg ProductComponents -gg -scom -sreg -sfrag -srd -dr INSTALLFOLDER -var var.SourceDir -out installer/harvested.wxs
 candle -dSourceDir=build/app installer/muktodwar.wxs installer/harvested.wxs -out build/
 light build/muktodwar.wixobj build/harvested.wixobj -out build/installer/MuktoDwar.msi
+node scripts/verify-msi.mjs build/installer/MuktoDwar.msi
 ```
-
-Output: `build/installer/MuktoDwar.msi`.
 
 ## 6. GitHub Actions (automatic)
 
