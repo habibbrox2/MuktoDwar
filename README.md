@@ -154,10 +154,15 @@ Point any OpenAI-compatible client at the gateway:
 
 `mukto-auto/free` is the gateway's own model id: it means *any free model
 you have allowlisted*. Configure it once and the client keeps working
-when you allowlist a new model or add a provider — the gateway resolves
+when you allowlist a new model or add a provider - the gateway resolves
 it at request time and tells you in the reply which model actually
 served the request. The pinned ids are in `GET /v1/models` if you prefer
 one.
+
+The dashboard's **Tokens** tab has a **Copy client config** button that
+copies the whole configuration — endpoint, token and alias — as JSON,
+as an OpenCode `opencode.json` fragment, as a Continue `config.yaml` or
+as an environment variable.
 
 > **[docs/connect-a-client.md](docs/connect-a-client.md)** is the full guide:
 > step by step setup, a recipe for every client (OpenAI SDK, OpenCode,

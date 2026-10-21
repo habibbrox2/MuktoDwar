@@ -292,7 +292,25 @@
             <p class="field__hint">
               Note: a new token is displayed once, immediately after it is generated. It is stored encrypted and can never be read back. Use the endpoint and model above with your gateway token as <code>Authorization: Bearer &lt;token&gt;</code>.
             </p>
-            <button type="button" class="btn btn--primary" id="usage-copy-curl">Copy cURL</button>
+            <div class="dialog__actions" style="justify-content:flex-start">
+              <button type="button" class="btn btn--primary" id="usage-copy-curl">Copy cURL</button>
+              <label class="field field--inline">
+                <span class="field__label">Client config</span>
+                <select id="usage-config-format" class="field__input">
+                  <option value="json">JSON (any OpenAI client)</option>
+                  <option value="opencode">OpenCode (opencode.json)</option>
+                  <option value="continue">Continue (config.yaml)</option>
+                  <option value="env">Environment variable</option>
+                </select>
+              </label>
+              <button type="button" class="btn" id="usage-copy-config">Copy client config</button>
+            </div>
+            <p class="field__hint" id="usage-config-hint">
+              The alias <code>mukto-auto/free</code> means "any free model you have allowlisted", so the
+              configuration keeps working when you add a model or a provider. The copied text carries your
+              gateway token so it works straight away — for OpenCode you can replace it with
+              <code>{env:MUKTODWAR_TOKEN}</code> and keep the token out of the file.
+            </p>
           </div>
         </section>
 
@@ -323,6 +341,7 @@
             <button type="button" class="btn" id="pg-clear">Clear</button>
           </div>
           <div id="pg-output" class="token-output" style="margin-top:12px;min-height:80px;white-space:pre-wrap"></div>
+          <p class="playground__served" id="pg-served" hidden></p>
 
           <h3 style="margin-top:18px">Client setup snippets</h3>
           <div class="grid-2">

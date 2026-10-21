@@ -371,6 +371,95 @@ $('usage-copy-curl')?.addEventListener('click', async () => {
   else toast('Copy failed.', 'bad');
 });
 
+/**
+ * Build the client configuration for the format that is selected.
+ *
+ * The alias is the model in every format: it means "any free model you have
+ * allowlisted", so the configuration keeps working when the allowlist
+ * changes.
+ */
+function buildClientConfig(format) {
+  const base = `${window.location.origin}/v1`;
+  const token = $('usage-token')?.value ?? '';
+  const model = $('usage-model')?.value ?? 'mukto-auto/free';
+
+  if (format === 'opencode') {
+    return JSON.stringify(
+      {
+        $schema: 'https://opencode.ai/config.json',
+        provider: {
+          muktodwar: {
+            npm: '@ai-sdk/openai-compatible',
+            name: 'MuktoDwar (local free gateway)',
+            options: { baseURL: base, apiKey: token },
+            models: { [model]: { name: 'MuktoDwar auto (free)' } },
+          },
+        },
+        model: `muktodwar/${model}`,
+      },
+      null,
+      2,
+    );
+  }
+
+  if (format === 'continue') {
+    return [
+      'name: MuktoDwar',
+      'version: 1.0.0',
+      'schema: v1',
+      'models:',
+      '  - name: MuktoDwar',
+      '    provider: openai',
+      `    model: ${model}`,
+      `    apiBase: ${base}`,
+      `    apiKey: ${token}`,
+      '    capabilities:',
+      '      - tool_use',
+      '    roles:',
+      '      - chat',
+      '      - edit',
+      '      - apply',
+      '',
+    ].join('\n');
+  }
+
+  if (format === 'env') {
+    return [
+      '# PowerShell',
+      `$env:GATEWAY_TOKEN = '${token}'`,
+      '',
+      '# macOS / Linux',
+      `export GATEWAY_TOKEN='${token}'`,
+      '',
+      '# Python .env',
+      `GATEWAY_TOKEN=${token}`,
+      '',
+    ].join('\n');
+  }
+
+  return JSON.stringify(
+    {
+      base_url: base,
+      api_key: token,
+      model,
+      note: 'mukto-auto/free means any free model you have allowlisted',
+    },
+    null,
+    2,
+  );
+}
+
+$('usage-copy-config')?.addEventListener('click', async () => {
+  const format = $('usage-config-format')?.value ?? 'json';
+  const config = buildClientConfig(format);
+  if (await copyToClipboard(config)) {
+    const label = $('usage-config-format')?.selectedOptions?.[0]?.textContent ?? format;
+    toast(`${label} copied.`, 'ok');
+  } else {
+    toast('Copy failed.', 'bad');
+  }
+});
+
 async function loadPlaygroundModels() {
   const select = $('pg-model');
   if (!select) return;
@@ -415,6 +504,8 @@ $('pg-send')?.addEventListener('click', async () => {
   if (!message) { toast('Enter a message.', 'bad'); return; }
   const output = $('pg-output');
   output.textContent = '';
+  const served = $('pg-served');
+  if (served) { served.textContent = ''; served.hidden = true; }
   const token = await ensureGatewayToken();
   const controller = new AbortController();
   pgAbort = controller;
@@ -448,6 +539,15 @@ $('pg-send')?.addEventListener('click', async () => {
         if (payload === '[DONE]') continue;
         try {
           const json = JSON.parse(payload);
+          // The gateway answers with the model that actually served the
+          // request, which is not the alias the client asked for.
+          if (json.model && served && served.hidden) {
+            served.replaceChildren(
+              el('span', { class: 'playground__served-label', text: 'Served by' }),
+              el('code', { text: json.model }),
+            );
+            served.hidden = false;
+          }
           const delta = json.choices?.[0]?.delta?.content ?? json.choices?.[0]?.message?.content ?? '';
           if (delta) output.textContent += delta;
         } catch {

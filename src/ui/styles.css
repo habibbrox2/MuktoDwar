@@ -354,6 +354,11 @@ body {
 
 .field__hint { font-size: 11px; color: var(--text-faint); }
 
+/* A field that sits next to a button in a row of actions. */
+.field--inline { display: flex; flex-direction: row; align-items: center; gap: 8px; margin: 0; }
+.field--inline .field__label { margin: 0; white-space: nowrap; }
+.field--inline .field__input { min-width: 200px; }
+
 .checkbox { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; font-size: 13px; }
 
 .fieldset {
@@ -425,6 +430,24 @@ body {
 .filter-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
 .filter-row .field__input { flex: 1; min-width: 0; }
 .field__count { font-size: 11px; color: var(--text-faint); white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+/* The model that actually served a playground request. */
+.playground__served {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 8px 0 0;
+  font-size: 11px;
+  color: var(--text-faint);
+}
+.playground__served code {
+  font-family: var(--mono);
+  color: var(--ok);
+  background: rgb(0 0 0 / .2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 1px 6px;
+}
 
 .chip {
   display: inline-flex;

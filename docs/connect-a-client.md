@@ -58,6 +58,11 @@ Open the dashboard at <http://127.0.0.1:8787/>, sign in with the
 administrator token, and open the **Tokens** tab. The gateway token is
 shown there together with a ready-made cURL command.
 
+The same tab has a **Copy client config** button. Pick the format your
+client uses — JSON, OpenCode, Continue or an environment variable — and
+the configuration is copied with the endpoint, the token and the alias
+already filled in, so there is nothing left to type.
+
 If you rotate it, every client has to be updated with the new value.
 
 ## Step 3 — list the models you may use
@@ -102,6 +107,10 @@ curl http://127.0.0.1:8787/v1/chat/completions `
 The reply carries the model that **actually** served the request, not the
 alias you asked for. That is how you see which free model the gateway
 picked for you.
+
+The **API Playground** tab of the dashboard shows the same thing next to
+the answer, so you can check which model is picked before you point a
+client at the gateway.
 
 If this works, every recipe below works too.
 
