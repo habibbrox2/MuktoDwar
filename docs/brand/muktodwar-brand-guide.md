@@ -50,9 +50,17 @@ offline as online.
 | Admin console | `assets/fonts/*.woff2` → served at `/fonts/` by the gateway |
 | Published site | `assets/fonts/*.woff2` → copied to `dist-site/assets/fonts/` by `npm run site:build` |
 
+Hind Siliguri ships as two subsets per weight: one for Latin characters and one
+for Bengali. The subsets do not overlap — the Latin file holds no Bengali
+glyphs, and the Bengali file holds no Latin glyphs. Both must be declared, each
+with a `unicode-range`, or the browser draws Bengali text in a fallback face.
+The published site is Bengali-first, so a missing Bengali subset is visible on
+every page.
+
 `npm run site:build` verifies that every `url()` in a stylesheet resolves to a
 file that exists, so a wrong relative path fails the build instead of shipping
-a broken font.
+a broken font. `test/self-hosted-fonts.test.ts` reads the `cmap` table of every
+shipped font and checks that it really holds the characters its name promises.
 
 ## Spacing and sizing
 

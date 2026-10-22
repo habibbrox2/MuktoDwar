@@ -9,6 +9,29 @@ The fonts are served from the gateway itself (at /fonts/) and copied into the
 published site by scripts/build-site.mjs. They are never fetched from a remote
 font provider, so the admin console works with no internet connection.
 
+Subset files
+------------
+
+Google Fonts serves each family as several subset files, and the subsets do
+not overlap: a Latin file carries no Bengali glyphs, and a Bengali file
+carries no Latin glyphs. The names here say which characters each file holds.
+
+| File | Holds |
+|---|---|
+| `inter.woff2` | Latin, variable weight 100-900, with an optical-size axis |
+| `inter-300-800.woff2` | Latin, variable weight 300-800 |
+| `hindsiliguri-400.woff2` | Latin, weight 400 |
+| `hindsiliguri-600.woff2` | Latin, weight 600 |
+| `hindsiliguri-700.woff2` | Latin, weight 700 |
+| `hindsiliguri-bengali-400.woff2` | Bengali, weight 400 |
+| `hindsiliguri-bengali-600.woff2` | Bengali, weight 600 |
+| `hindsiliguri-bengali-700.woff2` | Bengali, weight 700 |
+| `firacode-latin.woff2` | Latin, variable weight 300-700 |
+
+The stylesheets pair each family with a `unicode-range`, so the browser picks
+the file that owns the character it is about to draw. A stylesheet that
+declares only the Latin subset renders Bengali text in a fallback face.
+
 --------------------------------------------------------------------------
 
 Inter
