@@ -40,11 +40,10 @@ Source: "..\scripts\*"; DestDir: "{app}\scripts"; Flags: ignoreversion recursesu
 ; the application. The desktop shortcut is not optional: installing the
 ; program and finding it on the desktop is what a user expects.
 ;
-; {autodesktop} is the desktop of the person who started Setup, even
-; when Setup runs with administrator rights, which is where the Windows
-; Installer package puts its shortcut as well.
+; The desktop shortcut goes to the common desktop, which is where the
+; Windows Installer package puts it as well.
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
-Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
+Name: "{commondesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; WorkingDir: "{app}"; Flags: nowait postinstall skipifsilent runasoriginaluser

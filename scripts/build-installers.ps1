@@ -97,10 +97,16 @@ Write-Host "==> WiX Toolset: $WixBin"
 
 # Harvest the application folder into a component group.
 #
-# The transform marks every harvested component as a 64-bit component:
-# the package is built for x64, and Windows Installer decides from the
-# component which view of the registry it writes to.
-heat dir $AppRel -cg ProductComponents -gg -scom -sreg -sfrag -srd -dr INSTALLFOLDER -var var.SourceDir -t installer/heat-64bit.xslt -out installer/harvested.wxs
+# The transform marks every harvested component as a 64-bit component
+# (the package is built for x64, and Windows Installer decides from the
+# component which view of the registry it writes to) and leaves the
+# executable to the package, which declares it together with the
+# shortcuts that point at it.
+#
+# -ag instead of -gg: the component ids are then derived from the file
+# they hold, so they stay the same from one build to the next and an
+# upgrade replaces only what changed.
+heat dir $AppRel -cg ProductComponents -ag -scom -sreg -sfrag -srd -dr INSTALLFOLDER -var var.SourceDir -t installer/heat-transform.xslt -out installer/harvested.wxs
 if ($LASTEXITCODE -ne 0) { throw 'WiX harvest failed.' }
 
 # Compile the authored package together with the harvested components.

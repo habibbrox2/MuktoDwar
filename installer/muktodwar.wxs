@@ -50,7 +50,7 @@
     <Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />
     <Feature Id="ProductFeature" Title="MuktoDwar" Level="1" Description="Local AI gateway with an OpenAI-compatible API.">
       <ComponentGroupRef Id="ProductComponents" />
-      <ComponentGroupRef Id="ApplicationShortcuts" />
+      <ComponentGroupRef Id="ApplicationExecutableGroup" />
       <ComponentGroupRef Id="InstallationMarkerGroup" />
     </Feature>
   </Product>
@@ -66,61 +66,47 @@
   </Fragment>
 
   <!--
-    The shortcuts: one in the Start menu and one on the desktop.
+    The application and its shortcuts.
 
-    The Start Menu shortcut used to sit in a component under the
-    installation folder, which put a useless .lnk next to the executable
-    instead of in the Start Menu. Both shortcuts now live where a user
-    expects them, and both are removed again when the product is
-    uninstalled.
+    The executable is declared here rather than harvested, because the
+    two shortcuts point at it. Windows Installer expects a shortcut that
+    it advertises to live in the component whose key path is the file
+    the shortcut points at, so the executable and both shortcuts are one
+    component.
 
-    Neither shortcut names an icon file: the executable carries the
-    MuktoDwar icon inside it, and a shortcut that points at an icon file
-    that is not next to it would show an empty icon instead.
-
-    Both components are marked for the platform they live on: the Start
-    Menu shortcut belongs to every user of the machine, the desktop
-    shortcut to the person who installed the program.
+    An advertised shortcut is registered by Windows Installer itself:
+    it appears in the Start menu and on the desktop, it is removed
+    again when the product is uninstalled, and it carries the icon of
+    the executable.
   -->
   <Fragment>
     <DirectoryRef Id="INSTALLFOLDER">
-      <Component Id="StartMenuShortcut" Guid="9E1B4C77-1A22-4E9B-9B3E-5C0F2A6D8E41" Win64="yes">
+      <Component Id="ApplicationExecutable" Guid="5A9E4C17-2B38-4D65-8F03-7C1E9B460D28" Win64="yes">
+        <File
+          Id="MuktodwarExe"
+          Name="muktodwar.exe"
+          Source="$(var.SourceDir)\muktodwar.exe"
+          KeyPath="yes" />
         <Shortcut
-          Id="StartMenuShortcutLink"
+          Id="StartMenuShortcut"
           Name="MuktoDwar"
           Description="MuktoDwar - local AI gateway"
           Directory="ProgramMenuFolder"
           Target="[INSTALLFOLDER]muktodwar.exe"
-          WorkingDirectory="INSTALLFOLDER" />
-        <RegistryValue
-          Root="HKLM"
-          Key="Software\MuktoDwar"
-          Name="StartMenuShortcut"
-          Type="integer"
-          Value="1"
-          KeyPath="yes" />
-      </Component>
-    </DirectoryRef>
-    <DirectoryRef Id="DesktopFolder">
-      <Component Id="DesktopShortcut" Guid="3F5B9C21-7D4E-4A16-B0C3-6E8F2D5A9B47">
+          WorkingDirectory="INSTALLFOLDER"
+          Advertise="yes" />
         <Shortcut
-          Id="DesktopShortcutLink"
+          Id="DesktopShortcut"
           Name="MuktoDwar"
           Description="MuktoDwar - local AI gateway"
+          Directory="DesktopFolder"
           Target="[INSTALLFOLDER]muktodwar.exe"
-          WorkingDirectory="INSTALLFOLDER" />
-        <RegistryValue
-          Root="HKCU"
-          Key="Software\MuktoDwar"
-          Name="DesktopShortcut"
-          Type="integer"
-          Value="1"
-          KeyPath="yes" />
+          WorkingDirectory="INSTALLFOLDER"
+          Advertise="yes" />
       </Component>
     </DirectoryRef>
-    <ComponentGroup Id="ApplicationShortcuts">
-      <ComponentRef Id="StartMenuShortcut" />
-      <ComponentRef Id="DesktopShortcut" />
+    <ComponentGroup Id="ApplicationExecutableGroup">
+      <ComponentRef Id="ApplicationExecutable" />
     </ComponentGroup>
   </Fragment>
 
