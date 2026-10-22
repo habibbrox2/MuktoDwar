@@ -92,16 +92,12 @@
           Name="MuktoDwar"
           Description="MuktoDwar - local AI gateway"
           Directory="ProgramMenuFolder"
-          Target="[INSTALLFOLDER]muktodwar.exe"
-          WorkingDirectory="INSTALLFOLDER"
           Advertise="yes" />
         <Shortcut
           Id="DesktopShortcut"
           Name="MuktoDwar"
           Description="MuktoDwar - local AI gateway"
           Directory="DesktopFolder"
-          Target="[INSTALLFOLDER]muktodwar.exe"
-          WorkingDirectory="INSTALLFOLDER"
           Advertise="yes" />
       </Component>
     </DirectoryRef>
