@@ -448,8 +448,9 @@ pwsh -File scripts/build-installers.ps1
 - `build/installer/MuktoDwar.msi` — Windows Installer package (IT / managed deployment)
 
 Both carry the same version, install into `C:\Program Files\MuktoDwar`, add the
-same Start Menu shortcut, register their own uninstaller in Add/Remove
-Programs, and keep your settings and API keys on upgrade and on uninstall.
+same Start Menu and desktop shortcuts, register their own uninstaller in
+Add/Remove Programs, and keep your settings and API keys on upgrade and on
+uninstall.
 
 Want a build without publishing a release? Run the **Windows Test Build**
 workflow (`.github/workflows/windows-test-build.yml`) from the Actions tab. It

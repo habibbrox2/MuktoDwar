@@ -1,5 +1,5 @@
 #define MyAppName "MuktoDwar"
-#define MyAppVersion "1.1.1"
+#define MyAppVersion "1.1.2"
 #define MyAppPublisher "MuktoDwar"
 #define MyAppExeName "muktodwar.exe"
 
@@ -17,6 +17,14 @@ SolidCompression=yes
 WizardStyle=modern
 UninstallDisplayIcon={app}\muktodwar.exe
 UninstallDisplayName=MuktoDwar
+SetupIconFile=..\assets\brand\muktodwar.ico
+; The application is a 64-bit program, so the installer runs in 64-bit mode
+; and {autopf} is the real Program Files, not Program Files (x86). The
+; Windows Installer package does the same, so both installers put the
+; application in the same place.
+SetupArchitecture=x64
+ArchitecturesAllowed=x64compatible
+ArchitecturesInstallIn64BitMode=x64compatible
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
@@ -29,11 +37,11 @@ Source: "..\assets\brand\*"; DestDir: "{app}\assets\brand"; Flags: ignoreversion
 Source: "..\scripts\*"; DestDir: "{app}\scripts"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
+; A shortcut in the Start menu and one on the desktop, both pointing at
+; the application. The desktop shortcut is not optional: installing the
+; program and finding it on the desktop is what a user expects.
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
-Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
-
-[Tasks]
-Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
+Name: "{commondesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; WorkingDir: "{app}"; Flags: nowait postinstall skipifsilent runasoriginaluser

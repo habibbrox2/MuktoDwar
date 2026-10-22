@@ -93,3 +93,12 @@ try {
 }
 
 console.log('Built:', out);
+
+// 6. Give the executable the MuktoDwar icon and version information.
+//
+// Last, because it rewrites the file: the executable is a copy of the
+// Node.js binary, so without this it would still call itself Node.js.
+execFileSync(process.execPath, [join(root, 'scripts', 'set-exe-metadata.mjs')], {
+  stdio: 'inherit',
+  cwd: root,
+});

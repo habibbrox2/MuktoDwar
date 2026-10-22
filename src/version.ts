@@ -6,4 +6,4 @@
  * the installers and the documentation, and `npm run verify` fails when
  * they have drifted apart.
  */
-export const GATEWAY_VERSION = '1.1.1';
+export const GATEWAY_VERSION = '1.1.2';

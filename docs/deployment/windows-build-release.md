@@ -41,9 +41,10 @@ installation policy:
 | -------------------- | ------------------------------------------------- |
 | Primary installer    | `MuktoDwar-Setup.exe` (Inno Setup)                |
 | Alternative package  | `MuktoDwar.msi` (WiX) — for IT / managed rollout  |
-| Application version  | `1.0.0` in both                                   |
+| Application version  | `1.1.2` in both                                   |
 | Install location     | `C:\Program Files\MuktoDwar` in both              |
 | Start Menu shortcut  | `MuktoDwar` in both                               |
+| Desktop shortcut     | `MuktoDwar` in both                               |
 | Uninstall            | Each package manages itself; both register an entry in Add/Remove Programs |
 | User settings & keys | Kept on upgrade and on uninstall (state lives in `%LOCALAPPDATA%\LocalAIGateway`, outside the install directory) |
 | Release              | Both are published as assets of the same release   |
@@ -89,13 +90,12 @@ Steps performed on `windows-latest`:
 5. Inno Setup -> `build/installer/MuktoDwar-Setup.exe`.
 6. WiX heat/candle/light -> `build/installer/MuktoDwar.msi`.
 7. Upload artifacts.
-8. Compute release tag (`v*` tag name, or `build-<run_number>` for branch pushes).
-9. Create GitHub Release with assets: `muktodwar.exe`, `MuktoDwar-Setup.exe`, `MuktoDwar.msi`.
+8. Create GitHub Release with assets: `muktodwar.exe`, `MuktoDwar-Setup.exe`, `MuktoDwar.msi` — for a `v*` tag only. A push to `main` builds the installers but keeps them as workflow artifacts.
 
 Both installers are produced from the **same** application build and share the
-same version, install location, Start Menu shortcut and uninstall policy. The
-Inno Setup `.exe` is the recommended installer for end users; the WiX `.msi` is
-the equivalent package for IT / managed deployment.
+same version, install location, Start Menu and desktop shortcuts and uninstall
+policy. The Inno Setup `.exe` is the recommended installer for end users; the
+WiX `.msi` is the equivalent package for IT / managed deployment.
 
 ## 6b. Test build without publishing (manual)
 
@@ -118,7 +118,9 @@ This triggers the workflow and publishes release `v1.0.0` with all assets.
 
 ## 8. Auto-build on every push
 
-Every push to `main` automatically builds and publishes a release tagged `build-<run_number>`. No manual steps needed.
+Every push to `main` builds both installers and keeps them as workflow
+artifacts. No release is published, so the Releases page only ever shows the
+versions you tagged.
 
 ## 9. Download links
 
