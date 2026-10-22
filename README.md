@@ -424,7 +424,10 @@ See [docs/providers.md](docs/providers.md) for the full verification matrix with
 
 A GitHub Actions workflow (`.github/workflows/release.yml`) builds the
 single-file Windows executable and both installers on the `windows-latest`
-runner, on every push to `main` and on version tags (`v*`).
+runner, on every push to `main` and on version tags (`v*`). A push to
+`main` leaves the build in the workflow artifacts; a **GitHub release is
+published for a tag only**, so the releases list holds the versions and
+not a build per commit.
 
 Local build:
 
@@ -455,8 +458,9 @@ and never creates a Release or a tag.
 
 ## Releases
 
-Windows builds are published automatically via GitHub Actions on every push to
-main and on version tags.
+Windows builds are published automatically via GitHub Actions on version
+tags. A push to `main` builds the installers too, but keeps them in the
+workflow artifacts.
 
 - **Latest release:** https://github.com/habibbrox2/MuktoDwar/releases/latest
 - **All releases:** https://github.com/habibbrox2/MuktoDwar/releases
