@@ -51,6 +51,7 @@
     <Feature Id="ProductFeature" Title="MuktoDwar" Level="1" Description="Local AI gateway with an OpenAI-compatible API.">
       <ComponentGroupRef Id="ProductComponents" />
       <ComponentGroupRef Id="ApplicationShortcuts" />
+      <ComponentGroupRef Id="InstallationMarkerGroup" />
     </Feature>
   </Product>
 
@@ -76,24 +77,62 @@
     Neither shortcut names an icon file: the executable carries the
     MuktoDwar icon inside it, and a shortcut that points at an icon file
     that is not next to it would show an empty icon instead.
+
+    Both components are per-user, with their key path under HKCU. That is
+    what Windows Installer expects from a shortcut that is not
+    advertised, and it is also what puts the desktop shortcut on the
+    desktop of the person who installed the program.
   -->
   <Fragment>
     <DirectoryRef Id="INSTALLFOLDER">
-      <Component Id="ApplicationShortcuts" Guid="9E1B4C77-1A22-4E9B-9B3E-5C0F2A6D8E41" Win64="yes">
+      <Component Id="StartMenuShortcut" Guid="9E1B4C77-1A22-4E9B-9B3E-5C0F2A6D8E41">
         <Shortcut
-          Id="StartMenuShortcut"
+          Id="StartMenuShortcutLink"
           Name="MuktoDwar"
           Description="MuktoDwar - local AI gateway"
           Directory="ProgramMenuFolder"
           Target="[INSTALLFOLDER]muktodwar.exe"
           WorkingDirectory="INSTALLFOLDER" />
+        <RegistryValue
+          Root="HKCU"
+          Key="Software\MuktoDwar"
+          Name="StartMenuShortcut"
+          Type="integer"
+          Value="1"
+          KeyPath="yes" />
+      </Component>
+    </DirectoryRef>
+    <DirectoryRef Id="DesktopFolder">
+      <Component Id="DesktopShortcut" Guid="3F5B9C21-7D4E-4A16-B0C3-6E8F2D5A9B47">
         <Shortcut
-          Id="DesktopShortcut"
+          Id="DesktopShortcutLink"
           Name="MuktoDwar"
           Description="MuktoDwar - local AI gateway"
-          Directory="DesktopFolder"
           Target="[INSTALLFOLDER]muktodwar.exe"
           WorkingDirectory="INSTALLFOLDER" />
+        <RegistryValue
+          Root="HKCU"
+          Key="Software\MuktoDwar"
+          Name="DesktopShortcut"
+          Type="integer"
+          Value="1"
+          KeyPath="yes" />
+      </Component>
+    </DirectoryRef>
+    <ComponentGroup Id="ApplicationShortcuts">
+      <ComponentRef Id="StartMenuShortcut" />
+      <ComponentRef Id="DesktopShortcut" />
+    </ComponentGroup>
+  </Fragment>
+
+  <!--
+    The marker that says MuktoDwar is installed on this machine. It is
+    a component of its own, because a component may not mix per-machine
+    and per-user data.
+  -->
+  <Fragment>
+    <DirectoryRef Id="INSTALLFOLDER">
+      <Component Id="InstallationMarker" Guid="7C4E1D8A-9B25-4F63-A0D7-3E8B5C216D94" Win64="yes">
         <RegistryValue
           Root="HKLM"
           Key="Software\MuktoDwar"
@@ -103,8 +142,8 @@
           KeyPath="yes" />
       </Component>
     </DirectoryRef>
-    <ComponentGroup Id="ApplicationShortcuts">
-      <ComponentRef Id="ApplicationShortcuts" />
+    <ComponentGroup Id="InstallationMarkerGroup">
+      <ComponentRef Id="InstallationMarker" />
     </ComponentGroup>
   </Fragment>
 </Wix>
