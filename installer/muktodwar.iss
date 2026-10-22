@@ -22,7 +22,6 @@ SetupIconFile=..\assets\brand\muktodwar.ico
 ; and {autopf} is the real Program Files, not Program Files (x86). The
 ; Windows Installer package does the same, so both installers put the
 ; application in the same place.
-SetupArchitecture=x64
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 
