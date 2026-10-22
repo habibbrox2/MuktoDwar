@@ -78,14 +78,13 @@
     MuktoDwar icon inside it, and a shortcut that points at an icon file
     that is not next to it would show an empty icon instead.
 
-    Both components are per-user, with their key path under HKCU. That is
-    what Windows Installer expects from a shortcut that is not
-    advertised, and it is also what puts the desktop shortcut on the
-    desktop of the person who installed the program.
+    Both components are marked for the platform they live on: the Start
+    Menu shortcut belongs to every user of the machine, the desktop
+    shortcut to the person who installed the program.
   -->
   <Fragment>
     <DirectoryRef Id="INSTALLFOLDER">
-      <Component Id="StartMenuShortcut" Guid="9E1B4C77-1A22-4E9B-9B3E-5C0F2A6D8E41">
+      <Component Id="StartMenuShortcut" Guid="9E1B4C77-1A22-4E9B-9B3E-5C0F2A6D8E41" Win64="yes">
         <Shortcut
           Id="StartMenuShortcutLink"
           Name="MuktoDwar"
@@ -94,7 +93,7 @@
           Target="[INSTALLFOLDER]muktodwar.exe"
           WorkingDirectory="INSTALLFOLDER" />
         <RegistryValue
-          Root="HKCU"
+          Root="HKLM"
           Key="Software\MuktoDwar"
           Name="StartMenuShortcut"
           Type="integer"
