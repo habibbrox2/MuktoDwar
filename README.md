@@ -48,13 +48,13 @@ npm run brand:build
 
 ## What it does
 
-- 🖥️ **Local only** — binds to `127.0.0.1` and refuses to start on any other address. No cloud account, no external hosting, no telemetry, no auto-updates.
+- 🖥️ **Local only** — binds to `127.0.0.1` and refuses to start on any other address. No cloud account, no external hosting, no telemetry, no auto-updates. The admin console self-hosts its fonts, so the UI makes no outbound request either.
 - 🔌 **OpenAI-compatible** — works unchanged with the official OpenAI SDKs, OpenCode, PHP, JavaScript, and anything that speaks `POST /v1/chat/completions`.
 - 🔀 **Hybrid router** — combines your priority order, measured latency (EWMA), provider health, cooldown and circuit breaking.
 - 🆓 **Free-only** — every model must be **explicitly allowlisted** and marked free by you; a provider that needs no key is called anonymously, and there is no paid fallback.
 - 🔐 **Windows DPAPI secret storage** — API keys encrypted at rest with `CurrentUser` scope, **never** plaintext, fail-closed on any error.
 - 📡 **Streaming** — SSE with backpressure, streamed straight through without buffering the upstream response.
-- 🧪 **Tested** — 154 tests: unit, integration, security, routing, streaming, configuration.
+- 🧪 **Tested** — 165 tests: unit, integration, security, routing, streaming, configuration.
 
 ---
 
@@ -280,7 +280,7 @@ npm run dev         # tsx watch, hot reload
 npm run build       # tsc -p tsconfig.build.json  → dist/
 npm start           # node dist/index.js
 npm run typecheck   # tsc --noEmit, strict
-npm test            # vitest run  (154 tests)
+npm test            # vitest run  (165 tests)
 npm run test:watch  # vitest watch
 npm run verify      # typecheck + test + build
 ```

@@ -38,6 +38,22 @@ Use the purple-to-blue spectrum only for the door, connected routing signal, or 
 - The wordmark is `MuktoDwar`: capital **M** and **D**, with no spaces or alternate spellings.
 - The supporting line is `Your Local Gateway to AI` in sentence case when normal text is appropriate; all-caps, tracked treatment is reserved for the supplied logo artwork.
 
+### Font delivery
+
+Inter, Hind Siliguri and Fira Code are **self-hosted** as WOFF2 under
+`assets/fonts/`. Neither the admin console nor the published site may link to a
+remote font provider: MuktoDwar is local-only, and its UI must render the same
+offline as online.
+
+| Surface | Source path |
+|---|---|
+| Admin console | `assets/fonts/*.woff2` → served at `/fonts/` by the gateway |
+| Published site | `assets/fonts/*.woff2` → copied to `dist-site/assets/fonts/` by `npm run site:build` |
+
+`npm run site:build` verifies that every `url()` in a stylesheet resolves to a
+file that exists, so a wrong relative path fails the build instead of shipping
+a broken font.
+
 ## Spacing and sizing
 
 - Keep clear space around a logo equal to at least the door-handle height. Do not let text, card borders, or other marks enter that zone.

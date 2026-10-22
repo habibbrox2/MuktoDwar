@@ -28,6 +28,55 @@
   --radius: 14px;
 }
 
+/* ---------- Self-hosted fonts ----------
+   Inter, Hind Siliguri and Fira Code ship as WOFF2 under assets/fonts/ and
+   are copied into the site build by scripts/build-site.mjs. The page never
+   calls out to a remote font provider, so the published site renders the same
+   whether or not the reader has internet access.
+*/
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 300 800;
+  src: url('fonts/inter-300-800.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Hind Siliguri';
+  font-style: normal;
+  font-weight: 400;
+  src: url('fonts/hindsiliguri-400.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Hind Siliguri';
+  font-style: normal;
+  font-weight: 600;
+  src: url('fonts/hindsiliguri-600.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Hind Siliguri';
+  font-style: normal;
+  font-weight: 700;
+  src: url('fonts/hindsiliguri-700.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Fira Code';
+  font-style: normal;
+  font-weight: 400;
+  src: url('fonts/firacode-400.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Fira Code';
+  font-style: normal;
+  font-weight: 600;
+  src: url('fonts/firacode-600.woff2') format('woff2');
+}
+
 * { box-sizing: border-box; }
 
 html { scroll-behavior: smooth; }

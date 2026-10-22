@@ -6,6 +6,7 @@
  *
  *   site/**            -> dist-site/**
  *   assets/brand/*.svg -> dist-site/assets/brand/*.svg
+ *   assets/fonts/*.woff2 -> dist-site/assets/fonts/*.woff2
  *
  * It then checks that every local asset referenced by the built HTML
  * actually exists, so a renamed or missing logo fails the build instead of
@@ -18,13 +19,14 @@
 
 import { createServer } from 'node:http';
 import { createReadStream } from 'node:fs';
-import { cp, mkdir, readFile, rm, stat } from 'node:fs/promises';
-import { extname, join, resolve } from 'node:path';
+import { cp, mkdir, readdir, readFile, rm, stat } from 'node:fs/promises';
+import { dirname, extname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const siteDir = join(root, 'site');
 const brandDir = join(root, 'assets', 'brand');
+const fontDir = join(root, 'assets', 'fonts');
 const outDir = join(root, 'dist-site');
 
 /** MIME types for the handful of extensions the site uses. */
@@ -46,6 +48,8 @@ async function build() {
   await cp(siteDir, outDir, { recursive: true });
   await mkdir(join(outDir, 'assets', 'brand'), { recursive: true });
   await cp(brandDir, join(outDir, 'assets', 'brand'), { recursive: true });
+  await mkdir(join(outDir, 'assets', 'fonts'), { recursive: true });
+  await cp(fontDir, join(outDir, 'assets', 'fonts'), { recursive: true });
 
   await verify();
 }
@@ -76,6 +80,52 @@ async function verify() {
   }
 
   console.log(`site: ${references.size} local asset reference(s) verified`);
+
+  await verifyStylesheets();
+}
+
+/**
+ * Fail when a stylesheet points at a local file that is not there.
+ *
+ * A CSS `url()` is resolved against the stylesheet's own directory, not the
+ * page, so a wrong relative path silently breaks a font or image without
+ * ever appearing in the HTML reference list above.
+ */
+async function verifyStylesheets() {
+  const stylesheets = [];
+  const walk = async (dir) => {
+    for (const entry of await readdir(dir, { withFileTypes: true })) {
+      const full = join(dir, entry.name);
+      if (entry.isDirectory()) await walk(full);
+      else if (entry.name.endsWith('.css')) stylesheets.push(full);
+    }
+  };
+  await walk(outDir);
+
+  const missing = [];
+  let count = 0;
+
+  for (const stylesheet of stylesheets) {
+    const source = await readFile(stylesheet, 'utf8');
+    const base = dirname(stylesheet);
+    for (const match of source.matchAll(/url\(\s*['"]?([^'")]+)['"]?\s*\)/g)) {
+      const value = match[1];
+      if (!value || value.startsWith('#') || value.startsWith('http') || value.startsWith('data:')) continue;
+      count += 1;
+      const target = resolve(base, value.split('#')[0].split('?')[0]);
+      try {
+        await stat(target);
+      } catch {
+        missing.push(`${relative(outDir, stylesheet)} -> ${value}`);
+      }
+    }
+  }
+
+  if (missing.length > 0) {
+    throw new Error(`The stylesheets reference missing files:\n  ${missing.join('\n  ')}`);
+  }
+
+  if (count > 0) console.log(`site: ${count} stylesheet url(s) verified`);
 }
 
 /** Serve dist-site for a local look at the published result. */

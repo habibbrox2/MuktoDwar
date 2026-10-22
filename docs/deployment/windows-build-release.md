@@ -145,6 +145,6 @@ Installed app stores config and DPAPI-encrypted secrets under `%LOCALAPPDATA%\Lo
 
 ## 12. Troubleshooting
 
-- If the exe fails to find the UI, ensure `ui/` and `assets/` folders sit next to `muktodwar.exe`.
+- If the exe fails to find the UI, ensure `ui/` and `assets/` folders sit next to `muktodwar.exe`. The `assets/` folder must contain both `brand/` and `fonts/`, or the console loses its self-hosted fonts and falls back to system faces.
 - For MSI install failures, check Windows Event Viewer -> Application log.
 - Re-run `npm run verify` locally before tagging a release.

@@ -9,6 +9,41 @@
   outline-offset: 2px;
 }
 
+/* ---------- Self-hosted fonts ----------
+   Inter and Hind Siliguri ship as WOFF2 under assets/fonts/ and are served
+   from the same origin as the console. Nothing in the admin UI calls out to
+   a remote font provider, so the gateway stays local-only even on a machine
+   with no internet access. The fallback chain in --font is unchanged.
+*/
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 100 900;
+  src: url('/fonts/inter.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Hind Siliguri';
+  font-style: normal;
+  font-weight: 400;
+  src: url('/fonts/hindsiliguri-400.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Hind Siliguri';
+  font-style: normal;
+  font-weight: 600;
+  src: url('/fonts/hindsiliguri-600.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Hind Siliguri';
+  font-style: normal;
+  font-weight: 700;
+  src: url('/fonts/hindsiliguri-700.woff2') format('woff2');
+}
+
 html, body {
   margin: 0;
   padding: 0;

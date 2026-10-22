@@ -123,6 +123,16 @@ export async function buildApp(deps: AppDependencies): Promise<GatewayApp> {
     decorateReply: false,
   });
 
+  // The admin console's fonts are self-hosted WOFF2 files, served from the
+  // same origin so the UI never needs to reach a remote font provider.
+  const fontDir = [resolve(process.cwd(), 'assets', 'fonts'), resolve(dirname(process.execPath), 'assets', 'fonts'), resolve(dirname(process.execPath), '..', 'assets', 'fonts')].find((d) => existsSync(join(d, 'inter.woff2'))) ?? resolve(process.cwd(), 'assets', 'fonts');
+  await app.register(fastifyStatic, {
+    root: fontDir,
+    prefix: '/fonts/',
+    index: false,
+    decorateReply: false,
+  });
+
   // The admin shell is read once at startup and served from memory.
   const shell = await readFile(join(uiDir, 'index.html'), 'utf8').catch(() => null);
 
