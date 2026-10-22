@@ -31,21 +31,22 @@
     Language="1033"
     Version="1.1.2"
     Manufacturer="MuktoDwar"
-    UpgradeCode="12345678-1234-1234-1234-123456789ABC"
-    Platform="x64">
+    UpgradeCode="12345678-1234-1234-1234-123456789ABC">
     <Package
+      Id="*"
       InstallerVersion="200"
       Compressed="yes"
       InstallScope="perMachine"
       Description="MuktoDwar - local AI gateway for Windows"
-      Manufacturer="MuktoDwar" />
+      Manufacturer="MuktoDwar"
+      Platform="x64" />
     <MajorUpgrade DowngradeErrorMessage="A newer version of MuktoDwar is already installed." />
     <MediaTemplate CabinetTemplate="app{0}.cab" CompressionLevel="high" EmbedCab="yes" />
     <Property Id="ARPPRODUCTICON" Value="muktodwar.ico" />
     <Property Id="ARPHELPLINK" Value="https://github.com/habibbrox2/MuktoDwar#readme" />
     <Property Id="ARPURLINFOABOUT" Value="https://github.com/habibbrox2/MuktoDwar" />
     <Property Id="ARPNOREPAIR" Value="1" />
-    <Icon Id="MuktoDwarIcon" SourceFile="..\assets\brand\muktodwar.ico" />
+    <Icon Id="muktodwar.ico" SourceFile="..\assets\brand\muktodwar.ico" />
     <Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />
     <Feature Id="ProductFeature" Title="MuktoDwar" Level="1" Description="Local AI gateway with an OpenAI-compatible API.">
       <ComponentGroupRef Id="ProductComponents" />
@@ -55,7 +56,7 @@
 
   <Fragment>
     <Directory Id="TARGETDIR" Name="SourceDir">
-      <Directory Id="ProgramFilesFolder">
+      <Directory Id="ProgramFiles64Folder">
         <Directory Id="INSTALLFOLDER" Name="MuktoDwar" />
       </Directory>
       <Directory Id="ProgramMenuFolder" Name="Programs" />
@@ -70,26 +71,28 @@
     instead of in the Start Menu. Both shortcuts now live where a user
     expects them, and both are removed again when the product is
     uninstalled.
+
+    Neither shortcut names an icon file: the executable carries the
+    MuktoDwar icon inside it, and a shortcut that points at an icon file
+    that is not next to it would show an empty icon instead.
   -->
   <Fragment>
     <DirectoryRef Id="INSTALLFOLDER">
-      <Component Id="ApplicationShortcuts" Guid="9E1B4C77-1A22-4E9B-9B3E-5C0F2A6D8E41">
+      <Component Id="ApplicationShortcuts" Guid="9E1B4C77-1A22-4E9B-9B3E-5C0F2A6D8E41" Win64="yes">
         <Shortcut
           Id="StartMenuShortcut"
           Name="MuktoDwar"
           Description="MuktoDwar - local AI gateway"
           Directory="ProgramMenuFolder"
           Target="[INSTALLFOLDER]muktodwar.exe"
-          WorkingDirectory="INSTALLFOLDER"
-          Icon="MuktoDwarIcon" />
+          WorkingDirectory="INSTALLFOLDER" />
         <Shortcut
           Id="DesktopShortcut"
           Name="MuktoDwar"
           Description="MuktoDwar - local AI gateway"
           Directory="DesktopFolder"
           Target="[INSTALLFOLDER]muktodwar.exe"
-          WorkingDirectory="INSTALLFOLDER"
-          Icon="MuktoDwarIcon" />
+          WorkingDirectory="INSTALLFOLDER" />
         <RegistryValue
           Root="HKLM"
           Key="Software\MuktoDwar"

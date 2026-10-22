@@ -96,7 +96,11 @@ $env:Path = $WixBin + ';' + $env:Path
 Write-Host "==> WiX Toolset: $WixBin"
 
 # Harvest the application folder into a component group.
-heat dir $AppRel -cg ProductComponents -gg -scom -sreg -sfrag -srd -dr INSTALLFOLDER -var var.SourceDir -out installer/harvested.wxs
+#
+# The transform marks every harvested component as a 64-bit component:
+# the package is built for x64, and Windows Installer decides from the
+# component which view of the registry it writes to.
+heat dir $AppRel -cg ProductComponents -gg -scom -sreg -sfrag -srd -dr INSTALLFOLDER -var var.SourceDir -t installer/heat-64bit.xslt -out installer/harvested.wxs
 if ($LASTEXITCODE -ne 0) { throw 'WiX harvest failed.' }
 
 # Compile the authored package together with the harvested components.
