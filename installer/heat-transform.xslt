@@ -31,8 +31,10 @@
     </xsl:copy>
   </xsl:template>
 
-  <!-- Leave the executable to the package, and drop the component that
-       held it once it is gone. -->
+  <!-- Leave the executable to the package: the shortcuts point at it,
+       and a shortcut that Windows Installer advertises needs a
+       component whose key path is the file it points at. The harvest
+       puts one file in each component, so the component goes with it. -->
+  <xsl:template match="*[local-name()='Component'][*[local-name()='File'][contains(@Source, 'muktodwar.exe')]]" />
   <xsl:template match="*[local-name()='File'][contains(@Source, 'muktodwar.exe')]" />
-  <xsl:template match="*[local-name()='Component'][not(*[local-name()='File']) and not(*[local-name()='RegistryValue'])]" />
 </xsl:stylesheet>
