@@ -1,5 +1,5 @@
 #define MyAppName "MuktoDwar"
-#define MyAppVersion "1.1.3"
+#define MyAppVersion "1.1.4"
 #define MyAppPublisher "MuktoDwar"
 #define MyAppExeName "muktodwar.exe"
 
@@ -8,6 +8,11 @@ AppId={{B4F2A1C3-7D8E-4F9A-9B0C-1D2E3F4A5B6C}}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}
+; The properties of the setup file itself, so that the installer says what
+; it is and which version it is in the details of Windows Explorer.
+VersionInfoVersion={#MyAppVersion}.0
+VersionInfoCompany={#MyAppPublisher}
+VersionInfoDescription={#MyAppName} Setup
 DefaultDirName={autopf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
 OutputDir=..\build\installer
