@@ -312,10 +312,15 @@ async function checkUpdate() {
     const res = await fetch('/admin/update-check', { credentials: 'same-origin' });
     if (!res.ok) return;
     const data = await res.json();
-    if (data.latest && data.latest.tag && data.latest.tag !== 'v' + data.current) {
-      toast('Update available: ' + data.latest.tag, 'ok');
+    const latest = data.latest;
+    if (!latest?.tag || latest.tag === 'v' + data.current) return;
+
+    if (latest.automaticInstallationAllowed === true && latest.installer?.sha256) {
+      toast('Update ' + latest.tag + ' is signed and ready for secure verification. Installer flow is not enabled yet.', 'ok');
+    } else {
+      toast('Update ' + latest.tag + ' is available, but automatic installation is disabled because publisher signing is not verified.', 'bad');
     }
-  } catch { /* ignore */ }
+  } catch { /* update checks must never interrupt gateway use */ }
 }
 
 async function loadSettings() {
