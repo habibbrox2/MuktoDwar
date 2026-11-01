@@ -65,7 +65,7 @@ export async function downloadAndVerifyInstaller(
   if (!THUMBPRINT.test(pin)) throw new Error('A trusted publisher certificate thumbprint is required.');
   if (!release.automaticInstallationAllowed || !release.installer ||
       release.installer.name !== 'MuktoDwar-Setup.exe' ||
-      release.publisherThumbprint?.toUpperCase() !== pin ||
+      (release.publisherThumbprint ?? '').replace(/[^a-f0-9]/gi, '').toUpperCase() !== pin ||
       !/^v\d+\.\d+\.\d+$/.test(release.tag) ||
       release.url !== `https://github.com/habibbrox2/MuktoDwar/releases/tag/${release.tag}` ||
       release.installer.url !== expectedAssetUrl(release.tag) ||
