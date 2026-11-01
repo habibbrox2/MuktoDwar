@@ -25,6 +25,7 @@ import { AdminSessionStore, deriveSecretId, generateToken } from './security/aut
 import { assertLoopbackBind } from './security/localhost.js';
 import { registerSecretValue } from './security/redact.js';
 import { buildApp } from './app.js';
+import { fetchLatestRelease } from './update/releases.js';
 
 /** Create the DPAPI driver, or exit with a clear diagnostic. */
 async function createDriver(): Promise<PowerShellDpapiDriver> {
@@ -176,15 +177,11 @@ async function main(): Promise<void> {
     process.stderr.write = (chunk: any, ...args: any[]) => { try { _fs.appendFileSync(_logFile, String(chunk)); } catch { /* ignore */ } return _origStderr(chunk, ...args); };
   } catch { /* ignore */ }
 
-  // Background update check (non-blocking).
-  (async () => {
-    try {
-      const res = await fetch('https://api.github.com/repos/habibbrox2/MuktoDwar/releases/latest', { headers: { 'User-Agent': 'MuktoDwar' } });
-      if (!res.ok) return;
-      const data = await res.json() as { tag_name?: string; html_url?: string };
-      (globalThis as any).__muktodwarLatest = { tag: data.tag_name, url: data.html_url };
-    } catch { /* ignore */ }
-  })();
+  // Background update check (non-blocking). Only validated, allowlisted
+  // release metadata reaches the authenticated admin update-check endpoint.
+  void fetchLatestRelease(GATEWAY_VERSION)
+    .then((release) => { (globalThis as any).__muktodwarLatest = release; })
+    .catch(() => { (globalThis as any).__muktodwarLatest = null; });
 
   // Single-instance guard
   const { join: _join } = await import('node:path');
