@@ -9,7 +9,7 @@ export const PRIMARY_TRUSTED_PUBLISHER_THUMBPRINT: string | null =
   TRUSTED_PUBLISHER_THUMBPRINTS[0] ?? null;
 
 export function normalizePublisherThumbprint(value: string): string {
-  return value.replace(/[^a-f0-9]/gi, "").toUpperCase();
+  return value.replace(/[\s:-]/g, "").toUpperCase();
 }
 
 export function isTrustedPublisherThumbprint(value: string): boolean {
