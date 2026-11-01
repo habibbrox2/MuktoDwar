@@ -3,8 +3,9 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="color-scheme" content="dark light" />
-    <title>MuktoDwar — Local AI Gateway</title>
+    <meta name="color-scheme" content="dark" />
+    <meta name="description" content="A lightweight, local-first AI gateway workspace." />
+    <title>MuktoDwar — Lightweight AI Gateway</title>
     <link rel="stylesheet" href="/ui/styles.css" />
     <link rel="icon" type="image/svg+xml" href="/brand/muktodwar-favicon.svg" />
     <link rel="alternate icon" href="/brand/favicon.ico" sizes="any" />
@@ -94,31 +95,31 @@
            app.js addresses tabs by data-tab, never by their text. -->
       <div class="workspace">
       <nav class="tabs" role="tablist" aria-label="Sections">
-        <button type="button" role="tab" class="tab" data-tab="providers" aria-label="Providers" title="Providers" aria-selected="true" aria-controls="panel-providers">
+        <button type="button" role="tab" class="tab" id="tab-providers" data-tab="providers" aria-label="Providers" title="Providers" aria-selected="true" aria-controls="panel-providers">
           <span class="sym" aria-hidden="true">⬢</span>
           <span class="tab__label">Providers</span>
         </button>
-        <button type="button" role="tab" class="tab" data-tab="models" aria-label="Models" title="Models" aria-selected="false" aria-controls="panel-models">
+        <button type="button" role="tab" class="tab" id="tab-models" data-tab="models" aria-label="Models" title="Models" aria-selected="false" aria-controls="panel-models">
           <span class="sym" aria-hidden="true">❖</span>
           <span class="tab__label">Models</span>
         </button>
-        <button type="button" role="tab" class="tab" data-tab="routing" aria-label="Routing" title="Routing" aria-selected="false" aria-controls="panel-routing">
+        <button type="button" role="tab" class="tab" id="tab-routing" data-tab="routing" aria-label="Routing" title="Routing" aria-selected="false" aria-controls="panel-routing">
           <span class="sym" aria-hidden="true">⇄</span>
           <span class="tab__label">Routing</span>
         </button>
-        <button type="button" role="tab" class="tab" data-tab="status" aria-label="Status" title="Status" aria-selected="false" aria-controls="panel-status">
+        <button type="button" role="tab" class="tab" id="tab-status" data-tab="status" aria-label="Status" title="Status" aria-selected="false" aria-controls="panel-status">
           <span class="sym" aria-hidden="true">◴</span>
           <span class="tab__label">Status</span>
         </button>
-        <button type="button" role="tab" class="tab" data-tab="tokens" aria-label="Tokens" title="Tokens" aria-selected="false" aria-controls="panel-tokens">
+        <button type="button" role="tab" class="tab" id="tab-tokens" data-tab="tokens" aria-label="Tokens" title="Tokens" aria-selected="false" aria-controls="panel-tokens">
           <span class="sym" aria-hidden="true">⚿</span>
           <span class="tab__label">Tokens</span>
         </button>
-        <button type="button" role="tab" class="tab" data-tab="playground" aria-label="API Playground" title="API Playground" aria-selected="false" aria-controls="panel-playground">
+        <button type="button" role="tab" class="tab" id="tab-playground" data-tab="playground" aria-label="API Playground" title="API Playground" aria-selected="false" aria-controls="panel-playground">
           <span class="sym" aria-hidden="true">▶</span>
           <span class="tab__label">Playground</span>
         </button>
-        <button type="button" role="tab" class="tab" data-tab="settings" aria-label="Settings" title="Settings" aria-selected="false" aria-controls="panel-settings">
+        <button type="button" role="tab" class="tab" id="tab-settings" data-tab="settings" aria-label="Settings" title="Settings" aria-selected="false" aria-controls="panel-settings">
           <span class="sym" aria-hidden="true">⚙</span>
           <span class="tab__label">Settings</span>
         </button>
