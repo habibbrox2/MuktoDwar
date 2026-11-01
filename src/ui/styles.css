@@ -1165,3 +1165,43 @@ textarea.field__input { line-height: 1.65; }
   .panel { animation: none; }
 }
 body[data-reduced-motion="true"] .panel { animation: none; }
+
+
+/* Final refinement: predictable type scale, dense data surfaces and safe overflow. */
+:root {
+  --font: Inter, "Segoe UI", ui-sans-serif, system-ui, sans-serif;
+  --mono: "JetBrains Mono", "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+body { overflow-x: hidden; }
+button, input, select, textarea { font: inherit; }
+code, pre, kbd, samp, .eyebrow, .field__label, .panel__count,
+.pill, .tag, .chip, .playground__served code, .token-output__value {
+  font-family: var(--mono);
+}
+.panel__note, .field__hint, .gate__hint { overflow-wrap: anywhere; }
+.table-wrap { overflow-x: auto; }
+.table { min-width: 520px; }
+.table--models { min-width: 0; }
+pre { max-width: 100%; overflow: auto; }
+pre code { white-space: pre; }
+.field__input { min-width: 0; }
+.row__main, .token-row__text { overflow-wrap: anywhere; }
+button:disabled { opacity: .48; cursor: not-allowed; transform: none; }
+.btn--danger:hover { border-color: var(--bad); }
+.empty { line-height: 1.6; }
+@media (max-width: 800px) {
+  .tabs { scrollbar-width: thin; scrollbar-color: #29414d transparent; }
+  .tabs .tab[aria-selected="true"] { border-left-width: 1px; border-bottom: 2px solid var(--accent); }
+}
+@media (max-width: 520px) {
+  .table { min-width: 560px; }
+  .table--models { min-width: 420px; }
+  .dialog__actions { flex-wrap: wrap; }
+  .dialog__actions > * { max-width: 100%; }
+  .gate__card { padding: 22px; }
+}
+@media (forced-colors: active) {
+  .tab[aria-selected="true"], .btn--primary { outline: 1px solid ButtonText; }
+}
