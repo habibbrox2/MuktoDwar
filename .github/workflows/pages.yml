@@ -35,6 +35,16 @@ jobs:
         with:
           node-version: 26
 
+      - name: Install Chromium for static dashboard screenshots
+        run: |
+          npx --yes playwright install --with-deps chromium
+
+      - name: Capture sanitized dashboard preview (desktop and mobile)
+        run: |
+          mkdir -p site/assets
+          npx --yes playwright screenshot --browser chromium --viewport-size="1440,1000" --full-page "file://$PWD/site/dashboard-preview.html" site/assets/dashboard-preview-desktop.png
+          npx --yes playwright screenshot --browser chromium --viewport-size="390,844" --full-page "file://$PWD/site/dashboard-preview.html" site/assets/dashboard-preview-mobile.png
+
       - name: Build the site
         run: node scripts/build-site.mjs
 
