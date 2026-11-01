@@ -67,12 +67,23 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
+          function Invoke-BoundedProcess {
+            param([string]$FilePath, [string[]]$ArgumentList, [int]$TimeoutSeconds, [string]$Label)
+            $child = Start-Process -FilePath $FilePath -ArgumentList $ArgumentList -PassThru
+            if (-not $child.WaitForExit($TimeoutSeconds * 1000)) {
+              try { $child.Kill($true) } catch {}
+              try { $child.WaitForExit(10000) | Out-Null } catch {}
+              throw "$Label timed out after $TimeoutSeconds seconds."
+            }
+            $child.Refresh()
+            return $child.ExitCode
+          }
           $installer = (Resolve-Path "build/installer/MuktoDwar-Setup.exe").Path
           $installDir = Join-Path $env:ProgramFiles "MuktoDwar"
           $appExe = Join-Path $installDir "muktodwar.exe"
           $testRoot = Join-Path $env:RUNNER_TEMP "muktodwar-smoke"
           $env:LOCALAPPDATA = Join-Path $testRoot "LocalAppData"
-          New-Item -ItemType Directory -Force -Path $env:LOCALAPPDATA | Out-Null
+          New-Item -ItemType Directory -Force -Path $env:LOCALAPPDATA, $testRoot | Out-Null
 
           $proc = $null
           $oldProc = $null
@@ -82,9 +93,9 @@ jobs:
             # in place with the PR build. This exercises the real version
             # transition while keeping the user profile isolated to this job.
             $previousInstaller = Join-Path $testRoot "MuktoDwar-1.1.3-Setup.exe"
-            Invoke-WebRequest "https://github.com/habibbrox2/MuktoDwar/releases/download/v1.1.3/MuktoDwar-Setup.exe" -OutFile $previousInstaller
-            $previousInstall = Start-Process -FilePath $previousInstaller -ArgumentList @("/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/SP-") -Wait -PassThru
-            if ($previousInstall.ExitCode -ne 0) { throw "Previous-version installer failed with exit code $($previousInstall.ExitCode)." }
+            Invoke-WebRequest "https://github.com/habibbrox2/MuktoDwar/releases/download/v1.1.3/MuktoDwar-Setup.exe" -OutFile $previousInstaller -TimeoutSec 120
+            $previousExitCode = Invoke-BoundedProcess -FilePath $previousInstaller -ArgumentList @("/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/SP-") -TimeoutSeconds 180 -Label "Previous-version installer"
+            if ($previousExitCode -ne 0) { throw "Previous-version installer failed with exit code $previousExitCode." }
             if (-not (Test-Path $appExe)) { throw "Previous-version executable is missing." }
 
             $oldProc = Start-Process -FilePath $appExe -PassThru
@@ -103,8 +114,8 @@ jobs:
             Wait-Process -Id $oldProc.Id -Timeout 10 -ErrorAction SilentlyContinue
             $oldProc = $null
 
-            $install = Start-Process -FilePath $installer -ArgumentList @("/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/SP-") -Wait -PassThru
-            if ($install.ExitCode -ne 0) { throw "Installer failed with exit code $($install.ExitCode)." }
+            $installExitCode = Invoke-BoundedProcess -FilePath $installer -ArgumentList @("/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/SP-") -TimeoutSeconds 180 -Label "Current-version installer"
+            if ($installExitCode -ne 0) { throw "Installer failed with exit code $installExitCode." }
             if (-not (Test-Path $appExe)) { throw "Installed executable is missing." }
 
             $proc = Start-Process -FilePath $appExe -PassThru
@@ -142,31 +153,43 @@ jobs:
             }
             $uninstaller = Join-Path $installDir "unins000.exe"
             if (Test-Path $uninstaller) {
-              $remove = Start-Process -FilePath $uninstaller -ArgumentList @("/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART") -Wait -PassThru
-              if ($remove.ExitCode -ne 0) { throw "Uninstaller failed with exit code $($remove.ExitCode)." }
+              $removeExitCode = Invoke-BoundedProcess -FilePath $uninstaller -ArgumentList @("/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART") -TimeoutSeconds 120 -Label "Inno Setup uninstaller"
+              if ($removeExitCode -ne 0) { throw "Uninstaller failed with exit code $removeExitCode." }
               if (Test-Path $appExe) { throw "Application executable remains after uninstall." }
               Write-Host "PASS: silent uninstall removed the application."
             }
+            if (Test-Path $testRoot) { Remove-Item -LiteralPath $testRoot -Recurse -Force -ErrorAction SilentlyContinue }
           }
 
       - name: Smoke-test WiX MSI install, repair, localhost and uninstall
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
+          function Invoke-BoundedProcess {
+            param([string]$FilePath, [string[]]$ArgumentList, [int]$TimeoutSeconds, [string]$Label)
+            $child = Start-Process -FilePath $FilePath -ArgumentList $ArgumentList -PassThru
+            if (-not $child.WaitForExit($TimeoutSeconds * 1000)) {
+              try { $child.Kill($true) } catch {}
+              try { $child.WaitForExit(10000) | Out-Null } catch {}
+              throw "$Label timed out after $TimeoutSeconds seconds."
+            }
+            $child.Refresh()
+            return $child.ExitCode
+          }
           $msi = (Resolve-Path "build/installer/MuktoDwar.msi").Path
           $installDir = Join-Path $env:ProgramFiles "MuktoDwar"
           $appExe = Join-Path $installDir "muktodwar.exe"
           $testRoot = Join-Path $env:RUNNER_TEMP "muktodwar-msi-smoke"
           $env:LOCALAPPDATA = Join-Path $testRoot "LocalAppData"
-          New-Item -ItemType Directory -Force -Path $env:LOCALAPPDATA | Out-Null
+          New-Item -ItemType Directory -Force -Path $env:LOCALAPPDATA, $testRoot | Out-Null
           $installLog = Join-Path $testRoot "msi-install.log"
           $repairLog = Join-Path $testRoot "msi-repair.log"
           $removeLog = Join-Path $testRoot "msi-uninstall.log"
           $proc = $null
           $productCode = $null
           try {
-            $install = Start-Process msiexec.exe -ArgumentList @("/i", "`"$msi`"", "/qn", "/norestart", "/l*v", "`"$installLog`"") -Wait -PassThru
-            if ($install.ExitCode -notin @(0, 3010)) { throw "MSI install failed with exit code $($install.ExitCode). See $installLog." }
+            $installExitCode = Invoke-BoundedProcess -FilePath "msiexec.exe" -ArgumentList @("/i", "`"$msi`"", "/qn", "/norestart", "/l*v", "`"$installLog`"") -TimeoutSeconds 240 -Label "MSI install"
+            if ($installExitCode -notin @(0, 3010)) { throw "MSI install failed with exit code $installExitCode. See $installLog." }
             if (-not (Test-Path $appExe)) { throw "MSI did not install the application executable." }
 
             $entry = Get-ItemProperty "HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*" |
@@ -198,13 +221,13 @@ jobs:
             Wait-Process -Id $proc.Id -Timeout 10 -ErrorAction SilentlyContinue
             $proc = $null
 
-            $repair = Start-Process msiexec.exe -ArgumentList @("/fa", $productCode, "/qn", "/norestart", "/l*v", "`"$repairLog`"") -Wait -PassThru
-            if ($repair.ExitCode -notin @(0, 3010)) { throw "MSI repair failed with exit code $($repair.ExitCode). See $repairLog." }
+            $repairExitCode = Invoke-BoundedProcess -FilePath "msiexec.exe" -ArgumentList @("/fa", $productCode, "/qn", "/norestart", "/l*v", "`"$repairLog`"") -TimeoutSeconds 240 -Label "MSI repair"
+            if ($repairExitCode -notin @(0, 3010)) { throw "MSI repair failed with exit code $repairExitCode. See $repairLog." }
             if (-not (Test-Path $appExe)) { throw "MSI repair removed or failed to restore the application executable." }
             Write-Host "PASS: MSI repair completed."
 
-            $remove = Start-Process msiexec.exe -ArgumentList @("/x", $productCode, "/qn", "/norestart", "/l*v", "`"$removeLog`"") -Wait -PassThru
-            if ($remove.ExitCode -notin @(0, 3010)) { throw "MSI uninstall failed with exit code $($remove.ExitCode). See $removeLog." }
+            $removeExitCode = Invoke-BoundedProcess -FilePath "msiexec.exe" -ArgumentList @("/x", $productCode, "/qn", "/norestart", "/l*v", "`"$removeLog`"") -TimeoutSeconds 240 -Label "MSI uninstall"
+            if ($removeExitCode -notin @(0, 3010)) { throw "MSI uninstall failed with exit code $removeExitCode. See $removeLog." }
             if (Test-Path $appExe) { throw "Application executable remains after MSI uninstall." }
             $remaining = Get-ItemProperty "HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*" -ErrorAction SilentlyContinue |
               Where-Object { $_.DisplayName -eq "MuktoDwar" }
@@ -217,8 +240,9 @@ jobs:
               Wait-Process -Id $proc.Id -Timeout 10 -ErrorAction SilentlyContinue
             }
             if ($productCode -and (Test-Path $appExe)) {
-              Start-Process msiexec.exe -ArgumentList @("/x", $productCode, "/qn", "/norestart") -Wait -ErrorAction SilentlyContinue | Out-Null
+              try { Invoke-BoundedProcess -FilePath "msiexec.exe" -ArgumentList @("/x", $productCode, "/qn", "/norestart") -TimeoutSeconds 120 -Label "MSI cleanup" | Out-Null } catch { Write-Warning $_ }
             }
+            if (Test-Path $testRoot) { Remove-Item -LiteralPath $testRoot -Recurse -Force -ErrorAction SilentlyContinue }
           }
 
       - name: Verify output files and SHA-256

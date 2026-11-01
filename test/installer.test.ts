@@ -3,7 +3,7 @@ import { mkdtemp, readFile, readdir, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { downloadAndVerifyInstaller } from '../src/update/installer.js';
+import { downloadAndVerifyInstallerCore as downloadAndVerifyInstaller } from '../src/update/installer-core.js';
 import type { UpdateReleaseInfo } from '../src/update/releases.js';
 
 const pin = 'A'.repeat(40);
