@@ -70,7 +70,7 @@ jobs:
 
           $hasPfx = -not [string]::IsNullOrWhiteSpace($env:WINDOWS_SIGNING_PFX_BASE64)
           $hasPassword = -not [string]::IsNullOrWhiteSpace($env:WINDOWS_SIGNING_PFX_PASSWORD)
-          $expectedThumbprint = ($env:WINDOWS_SIGNING_CERT_THUMBPRINT -replace '\\s','').ToUpperInvariant()
+          $expectedThumbprint = ($env:WINDOWS_SIGNING_CERT_THUMBPRINT -replace '[^0-9A-Fa-f]','').ToUpperInvariant()
           if ($hasPfx -xor $hasPassword) {
             throw 'Both WINDOWS_SIGNING_PFX_BASE64 and WINDOWS_SIGNING_PFX_PASSWORD must be configured together.'
           }
