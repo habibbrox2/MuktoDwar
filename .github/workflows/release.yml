@@ -56,6 +56,7 @@ jobs:
         env:
           WINDOWS_SIGNING_PFX_BASE64: ${{ secrets.WINDOWS_SIGNING_PFX_BASE64 }}
           WINDOWS_SIGNING_PFX_PASSWORD: ${{ secrets.WINDOWS_SIGNING_PFX_PASSWORD }}
+          WINDOWS_SIGNING_CERT_THUMBPRINT: ${{ secrets.WINDOWS_SIGNING_CERT_THUMBPRINT }}
         run: |
           $ErrorActionPreference = 'Stop'
           $files = @(
@@ -69,11 +70,18 @@ jobs:
 
           $hasPfx = -not [string]::IsNullOrWhiteSpace($env:WINDOWS_SIGNING_PFX_BASE64)
           $hasPassword = -not [string]::IsNullOrWhiteSpace($env:WINDOWS_SIGNING_PFX_PASSWORD)
+          $expectedThumbprint = ($env:WINDOWS_SIGNING_CERT_THUMBPRINT -replace '\\s','').ToUpperInvariant()
           if ($hasPfx -xor $hasPassword) {
             throw 'Both WINDOWS_SIGNING_PFX_BASE64 and WINDOWS_SIGNING_PFX_PASSWORD must be configured together.'
           }
 
+          if ($hasPfx -and -not $expectedThumbprint) {
+            throw 'WINDOWS_SIGNING_CERT_THUMBPRINT is required when signing is enabled.'
+          }
+
           $signed = $false
+          $publisherThumbprint = $null
+          $autoInstallAllowed = $false
           if ($hasPfx) {
             $pfxPath = Join-Path $env:RUNNER_TEMP 'muktodwar-signing.pfx'
             try {
@@ -84,6 +92,8 @@ jobs:
                 [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::EphemeralKeySet
               )
               if (-not $cert.HasPrivateKey) { throw 'Signing certificate has no private key.' }
+              $publisherThumbprint = $cert.Thumbprint.ToUpperInvariant()
+              if ($publisherThumbprint -ne $expectedThumbprint) { throw 'PFX certificate thumbprint does not match the pinned WINDOWS_SIGNING_CERT_THUMBPRINT.' }
               $signtool = (Get-Command signtool.exe -ErrorAction Stop).Source
               foreach ($file in $files) {
                 & $signtool sign /fd SHA256 /tr https://timestamp.digicert.com /td SHA256 /f $pfxPath /p $env:WINDOWS_SIGNING_PFX_PASSWORD $file
@@ -92,6 +102,7 @@ jobs:
                 if ($LASTEXITCODE -ne 0) { throw "Authenticode verification failed: $file" }
               }
               $signed = $true
+              $autoInstallAllowed = $true
             }
             finally {
               Remove-Item $pfxPath -Force -ErrorAction SilentlyContinue
@@ -120,12 +131,13 @@ jobs:
             tag = if ($env:GITHUB_REF -like 'refs/tags/*') { $env:GITHUB_REF.Substring(10) } else { $null }
             generatedAt = [DateTime]::UtcNow.ToString('o')
             authenticodeSigned = $signed
-            automaticInstallationAllowed = $signed
+            publisherThumbprint = $publisherThumbprint
+            automaticInstallationAllowed = $autoInstallAllowed
             files = $entries
           }
           $manifest | ConvertTo-Json -Depth 6 | Set-Content 'build/installer/update-manifest.json' -Encoding utf8
           $entries | ForEach-Object { "$($_.sha256)  $($_.name)" } | Set-Content 'build/installer/SHA256SUMS.txt' -Encoding ascii
-          Write-Host "Integrity manifest created. AuthenticodeSigned=$signed; automaticInstallationAllowed=$signed"
+          Write-Host "Integrity manifest created. AuthenticodeSigned=$signed; publisherThumbprint=$publisherThumbprint; automaticInstallationAllowed=$autoInstallAllowed"
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
