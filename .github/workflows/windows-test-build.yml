@@ -149,6 +149,78 @@ jobs:
             }
           }
 
+      - name: Smoke-test WiX MSI install, repair, localhost and uninstall
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $msi = (Resolve-Path "build/installer/MuktoDwar.msi").Path
+          $installDir = Join-Path $env:ProgramFiles "MuktoDwar"
+          $appExe = Join-Path $installDir "muktodwar.exe"
+          $testRoot = Join-Path $env:RUNNER_TEMP "muktodwar-msi-smoke"
+          $env:LOCALAPPDATA = Join-Path $testRoot "LocalAppData"
+          New-Item -ItemType Directory -Force -Path $env:LOCALAPPDATA | Out-Null
+          $installLog = Join-Path $testRoot "msi-install.log"
+          $repairLog = Join-Path $testRoot "msi-repair.log"
+          $removeLog = Join-Path $testRoot "msi-uninstall.log"
+          $proc = $null
+          $productCode = $null
+          try {
+            $install = Start-Process msiexec.exe -ArgumentList @("/i", "`"$msi`"", "/qn", "/norestart", "/l*v", "`"$installLog`"") -Wait -PassThru
+            if ($install.ExitCode -notin @(0, 3010)) { throw "MSI install failed with exit code $($install.ExitCode). See $installLog." }
+            if (-not (Test-Path $appExe)) { throw "MSI did not install the application executable." }
+
+            $entry = Get-ItemProperty "HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*" |
+              Where-Object { $_.DisplayName -eq "MuktoDwar" } |
+              Select-Object -First 1
+            if (-not $entry) { throw "MSI uninstall registration was not found." }
+            $match = [regex]::Match([string]$entry.UninstallString, '\{[0-9A-Fa-f-]{36}\}')
+            if (-not $match.Success) { throw "MSI product code could not be read from uninstall registration." }
+            $productCode = $match.Value
+
+            $proc = Start-Process -FilePath $appExe -PassThru
+            $base = "http://127.0.0.1:8787"
+            $health = $null
+            for ($i = 0; $i -lt 60; $i++) {
+              Start-Sleep -Seconds 1
+              try { $health = Invoke-RestMethod "$base/health" -TimeoutSec 3; break } catch {}
+              if ($proc.HasExited) { throw "MSI-installed gateway exited during startup (code $($proc.ExitCode))." }
+            }
+            if (-not $health -or $health.status -ne "ok") { throw "MSI-installed gateway did not become healthy." }
+            $bootstrap = Invoke-RestMethod "$base/admin/default-token" -TimeoutSec 5
+            if (-not $bootstrap.token) { throw "MSI-installed admin token was not created." }
+            $session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+            $headers = @{ Origin = $base }
+            $login = Invoke-RestMethod "$base/admin/session" -Method Post -WebSession $session -Headers $headers -ContentType "application/json" -Body (@{ token = $bootstrap.token } | ConvertTo-Json -Compress) -TimeoutSec 5
+            if (-not $login.ok) { throw "MSI-installed admin login failed." }
+            Write-Host "PASS: MSI install, process startup, localhost health and admin login."
+
+            Stop-Process -Id $proc.Id -Force
+            Wait-Process -Id $proc.Id -Timeout 10 -ErrorAction SilentlyContinue
+            $proc = $null
+
+            $repair = Start-Process msiexec.exe -ArgumentList @("/fa", $productCode, "/qn", "/norestart", "/l*v", "`"$repairLog`"") -Wait -PassThru
+            if ($repair.ExitCode -notin @(0, 3010)) { throw "MSI repair failed with exit code $($repair.ExitCode). See $repairLog." }
+            if (-not (Test-Path $appExe)) { throw "MSI repair removed or failed to restore the application executable." }
+            Write-Host "PASS: MSI repair completed."
+
+            $remove = Start-Process msiexec.exe -ArgumentList @("/x", $productCode, "/qn", "/norestart", "/l*v", "`"$removeLog`"") -Wait -PassThru
+            if ($remove.ExitCode -notin @(0, 3010)) { throw "MSI uninstall failed with exit code $($remove.ExitCode). See $removeLog." }
+            if (Test-Path $appExe) { throw "Application executable remains after MSI uninstall." }
+            $remaining = Get-ItemProperty "HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*" -ErrorAction SilentlyContinue |
+              Where-Object { $_.DisplayName -eq "MuktoDwar" }
+            if ($remaining) { throw "MuktoDwar MSI uninstall registration remains after uninstall." }
+            Write-Host "PASS: MSI uninstall removed the executable and uninstall registration."
+          }
+          finally {
+            if ($proc -and -not $proc.HasExited) {
+              Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
+              Wait-Process -Id $proc.Id -Timeout 10 -ErrorAction SilentlyContinue
+            }
+            if ($productCode -and (Test-Path $appExe)) {
+              Start-Process msiexec.exe -ArgumentList @("/x", $productCode, "/qn", "/norestart") -Wait -ErrorAction SilentlyContinue | Out-Null
+            }
+          }
+
       - name: Verify output files and SHA-256
         shell: pwsh
         run: |
