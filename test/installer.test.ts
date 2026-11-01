@@ -58,7 +58,7 @@ describe('secure installer staging', () => {
   it('rejects a payload whose SHA-256 does not match and removes partial staging files', async () => {
     const root = await mkdtemp(join(tmpdir(), 'muktodwar-installer-test-'));
     roots.push(root);
-    const fetcher = vi.fn().mockResolvedValue(downloadResponse(Buffer.from('tampered payload')));
+    const fetcher = vi.fn().mockResolvedValue(downloadResponse(Buffer.alloc(bytes.length, 0x78)));
     await expect(downloadAndVerifyInstaller(release(), pin, {
       fetcher: fetcher as typeof fetch, destinationRoot: root,
       verifyAuthenticode: vi.fn().mockResolvedValue(true),
