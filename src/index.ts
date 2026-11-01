@@ -26,6 +26,7 @@ import { assertLoopbackBind } from './security/localhost.js';
 import { registerSecretValue } from './security/redact.js';
 import { buildApp } from './app.js';
 import { fetchLatestRelease } from './update/releases.js';
+import { GATEWAY_VERSION } from './version.js';
 
 /** Create the DPAPI driver, or exit with a clear diagnostic. */
 async function createDriver(): Promise<PowerShellDpapiDriver> {
