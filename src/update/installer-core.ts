@@ -56,7 +56,7 @@ export async function verifyWindowsAuthenticode(filePath: string, trustedThumbpr
 }
 
 /** Download, hash-check and locally verify the installer; never executes it. */
-export async function downloadAndVerifyInstaller(
+export async function downloadAndVerifyInstallerCore(
   release: UpdateReleaseInfo,
   trustedPublisherThumbprint: string,
   options: InstallerVerificationOptions = {},
