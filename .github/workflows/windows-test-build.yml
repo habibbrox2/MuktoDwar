@@ -1,6 +1,15 @@
 name: Windows Test Build
 
 on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'scripts/**'
+      - 'installer/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/windows-test-build.yml'
   workflow_dispatch:
 
 permissions:
@@ -8,9 +17,9 @@ permissions:
 
 jobs:
   test-build:
-    name: Build Windows Test Packages
+    name: Build and smoke-test Windows packages
     runs-on: windows-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
 
     steps:
       - name: Checkout
@@ -54,7 +63,60 @@ jobs:
         shell: pwsh
         run: scripts/build-installers.ps1
 
-      - name: Verify output files
+      - name: Smoke-test Inno Setup install, localhost, admin login and uninstall
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $installer = (Resolve-Path "build/installer/MuktoDwar-Setup.exe").Path
+          $installDir = Join-Path $env:ProgramFiles "MuktoDwar"
+          $appExe = Join-Path $installDir "muktodwar.exe"
+          $testRoot = Join-Path $env:RUNNER_TEMP "muktodwar-smoke"
+          $env:LOCALAPPDATA = Join-Path $testRoot "LocalAppData"
+          New-Item -ItemType Directory -Force -Path $env:LOCALAPPDATA | Out-Null
+
+          $proc = $null
+          try {
+            $install = Start-Process -FilePath $installer -ArgumentList @("/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/SP-") -Wait -PassThru
+            if ($install.ExitCode -ne 0) { throw "Installer failed with exit code $($install.ExitCode)." }
+            if (-not (Test-Path $appExe)) { throw "Installed executable is missing." }
+
+            $proc = Start-Process -FilePath $appExe -PassThru
+            $base = "http://127.0.0.1:8787"
+            $health = $null
+            for ($i = 0; $i -lt 60; $i++) {
+              Start-Sleep -Seconds 1
+              try { $health = Invoke-RestMethod "$base/health" -TimeoutSec 3; break } catch {}
+              if ($proc.HasExited) { throw "Gateway process exited during startup (code $($proc.ExitCode))." }
+            }
+            if (-not $health -or $health.status -ne "ok") { throw "Local health endpoint did not become ready." }
+
+            $bootstrap = Invoke-RestMethod "$base/admin/default-token" -TimeoutSec 5
+            if (-not $bootstrap.token) { throw "Admin bootstrap token was not available in the isolated test profile." }
+
+            $session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+            $headers = @{ Origin = $base }
+            $login = Invoke-RestMethod "$base/admin/session" -Method Post -WebSession $session -Headers $headers -ContentType "application/json" -Body (@{ token = $bootstrap.token } | ConvertTo-Json -Compress) -TimeoutSec 5
+            if (-not $login.ok) { throw "Admin session login failed." }
+            $settings = Invoke-RestMethod "$base/admin/settings" -WebSession $session -Headers $headers -TimeoutSec 5
+            if (-not $settings.localOnly -or $settings.bindHost -ne "127.0.0.1") { throw "Authenticated admin settings did not confirm loopback-only mode." }
+
+            Write-Host "PASS: installer, process startup, localhost health, admin login and authenticated settings."
+          }
+          finally {
+            if ($proc -and -not $proc.HasExited) {
+              Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
+              Wait-Process -Id $proc.Id -Timeout 10 -ErrorAction SilentlyContinue
+            }
+            $uninstaller = Join-Path $installDir "unins000.exe"
+            if (Test-Path $uninstaller) {
+              $remove = Start-Process -FilePath $uninstaller -ArgumentList @("/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART") -Wait -PassThru
+              if ($remove.ExitCode -ne 0) { throw "Uninstaller failed with exit code $($remove.ExitCode)." }
+              if (Test-Path $appExe) { throw "Application executable remains after uninstall." }
+              Write-Host "PASS: silent uninstall removed the application."
+            }
+          }
+
+      - name: Verify output files and SHA-256
         shell: pwsh
         run: |
           if (-not (Test-Path "build/muktodwar.exe")) {
@@ -62,12 +124,8 @@ jobs:
           }
           $setup = Get-ChildItem "build/installer" -Filter "*.exe" -ErrorAction SilentlyContinue
           $msi = Get-ChildItem "build/installer" -Filter "*.msi" -ErrorAction SilentlyContinue
-          if (-not $setup) {
-            throw "The Inno Setup installer was not generated."
-          }
-          if (-not $msi) {
-            throw "The MSI package was not generated."
-          }
+          if (-not $setup) { throw "The Inno Setup installer was not generated." }
+          if (-not $msi) { throw "The MSI package was not generated." }
           $files = @("build/muktodwar.exe") + @($setup.FullName) + @($msi.FullName)
           Get-FileHash $files -Algorithm SHA256
 
