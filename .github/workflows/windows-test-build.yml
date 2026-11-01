@@ -1,6 +1,15 @@
 name: Windows Test Build
 
 on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'scripts/**'
+      - 'installer/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/windows-test-build.yml'
   workflow_dispatch:
 
 permissions:
@@ -8,9 +17,9 @@ permissions:
 
 jobs:
   test-build:
-    name: Build Windows Test Packages
+    name: Build and smoke-test Windows packages
     runs-on: windows-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
 
     steps:
       - name: Checkout
@@ -54,7 +63,165 @@ jobs:
         shell: pwsh
         run: scripts/build-installers.ps1
 
-      - name: Verify output files
+      - name: Smoke-test Inno Setup install, localhost, admin login and uninstall
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $installer = (Resolve-Path "build/installer/MuktoDwar-Setup.exe").Path
+          $installDir = Join-Path $env:ProgramFiles "MuktoDwar"
+          $appExe = Join-Path $installDir "muktodwar.exe"
+          $testRoot = Join-Path $env:RUNNER_TEMP "muktodwar-smoke"
+          $env:LOCALAPPDATA = Join-Path $testRoot "LocalAppData"
+          New-Item -ItemType Directory -Force -Path $env:LOCALAPPDATA | Out-Null
+
+          $proc = $null
+          $oldProc = $null
+          $previousAdminToken = $null
+          try {
+            # Install the previous published version first, then upgrade it
+            # in place with the PR build. This exercises the real version
+            # transition while keeping the user profile isolated to this job.
+            $previousInstaller = Join-Path $testRoot "MuktoDwar-1.1.3-Setup.exe"
+            Invoke-WebRequest "https://github.com/habibbrox2/MuktoDwar/releases/download/v1.1.3/MuktoDwar-Setup.exe" -OutFile $previousInstaller
+            $previousInstall = Start-Process -FilePath $previousInstaller -ArgumentList @("/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/SP-") -Wait -PassThru
+            if ($previousInstall.ExitCode -ne 0) { throw "Previous-version installer failed with exit code $($previousInstall.ExitCode)." }
+            if (-not (Test-Path $appExe)) { throw "Previous-version executable is missing." }
+
+            $oldProc = Start-Process -FilePath $appExe -PassThru
+            $base = "http://127.0.0.1:8787"
+            $oldHealth = $null
+            for ($i = 0; $i -lt 60; $i++) {
+              Start-Sleep -Seconds 1
+              try { $oldHealth = Invoke-RestMethod "$base/health" -TimeoutSec 3; break } catch {}
+              if ($oldProc.HasExited) { throw "Previous gateway exited during startup (code $($oldProc.ExitCode))." }
+            }
+            if (-not $oldHealth -or $oldHealth.status -ne "ok") { throw "Previous gateway did not become ready." }
+            $previousBootstrap = Invoke-RestMethod "$base/admin/default-token" -TimeoutSec 5
+            $previousAdminToken = $previousBootstrap.token
+            if (-not $previousAdminToken) { throw "Previous-version admin token was not created." }
+            Stop-Process -Id $oldProc.Id -Force
+            Wait-Process -Id $oldProc.Id -Timeout 10 -ErrorAction SilentlyContinue
+            $oldProc = $null
+
+            $install = Start-Process -FilePath $installer -ArgumentList @("/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/SP-") -Wait -PassThru
+            if ($install.ExitCode -ne 0) { throw "Installer failed with exit code $($install.ExitCode)." }
+            if (-not (Test-Path $appExe)) { throw "Installed executable is missing." }
+
+            $proc = Start-Process -FilePath $appExe -PassThru
+            $base = "http://127.0.0.1:8787"
+            $health = $null
+            for ($i = 0; $i -lt 60; $i++) {
+              Start-Sleep -Seconds 1
+              try { $health = Invoke-RestMethod "$base/health" -TimeoutSec 3; break } catch {}
+              if ($proc.HasExited) { throw "Gateway process exited during startup (code $($proc.ExitCode))." }
+            }
+            if (-not $health -or $health.status -ne "ok") { throw "Local health endpoint did not become ready." }
+
+            $bootstrap = Invoke-RestMethod "$base/admin/default-token" -TimeoutSec 5
+            if (-not $bootstrap.token) { throw "Admin bootstrap token was not available in the isolated test profile." }
+            if ($bootstrap.token -ne $previousAdminToken) { throw "Admin token did not survive the 1.1.3 to current-version upgrade." }
+            Write-Host "PASS: upgrade from v1.1.3 preserved the existing DPAPI-backed admin token."
+
+            $session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+            $headers = @{ Origin = $base }
+            $login = Invoke-RestMethod "$base/admin/session" -Method Post -WebSession $session -Headers $headers -ContentType "application/json" -Body (@{ token = $bootstrap.token } | ConvertTo-Json -Compress) -TimeoutSec 5
+            if (-not $login.ok) { throw "Admin session login failed." }
+            $settings = Invoke-RestMethod "$base/admin/settings" -WebSession $session -Headers $headers -TimeoutSec 5
+            if (-not $settings.localOnly -or $settings.bindHost -ne "127.0.0.1") { throw "Authenticated admin settings did not confirm loopback-only mode." }
+
+            Write-Host "PASS: installer, process startup, localhost health, admin login and authenticated settings."
+          }
+          finally {
+            if ($oldProc -and -not $oldProc.HasExited) {
+              Stop-Process -Id $oldProc.Id -Force -ErrorAction SilentlyContinue
+              Wait-Process -Id $oldProc.Id -Timeout 10 -ErrorAction SilentlyContinue
+            }
+            if ($proc -and -not $proc.HasExited) {
+              Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
+              Wait-Process -Id $proc.Id -Timeout 10 -ErrorAction SilentlyContinue
+            }
+            $uninstaller = Join-Path $installDir "unins000.exe"
+            if (Test-Path $uninstaller) {
+              $remove = Start-Process -FilePath $uninstaller -ArgumentList @("/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART") -Wait -PassThru
+              if ($remove.ExitCode -ne 0) { throw "Uninstaller failed with exit code $($remove.ExitCode)." }
+              if (Test-Path $appExe) { throw "Application executable remains after uninstall." }
+              Write-Host "PASS: silent uninstall removed the application."
+            }
+          }
+
+      - name: Smoke-test WiX MSI install, repair, localhost and uninstall
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $msi = (Resolve-Path "build/installer/MuktoDwar.msi").Path
+          $installDir = Join-Path $env:ProgramFiles "MuktoDwar"
+          $appExe = Join-Path $installDir "muktodwar.exe"
+          $testRoot = Join-Path $env:RUNNER_TEMP "muktodwar-msi-smoke"
+          $env:LOCALAPPDATA = Join-Path $testRoot "LocalAppData"
+          New-Item -ItemType Directory -Force -Path $env:LOCALAPPDATA | Out-Null
+          $installLog = Join-Path $testRoot "msi-install.log"
+          $repairLog = Join-Path $testRoot "msi-repair.log"
+          $removeLog = Join-Path $testRoot "msi-uninstall.log"
+          $proc = $null
+          $productCode = $null
+          try {
+            $install = Start-Process msiexec.exe -ArgumentList @("/i", "`"$msi`"", "/qn", "/norestart", "/l*v", "`"$installLog`"") -Wait -PassThru
+            if ($install.ExitCode -notin @(0, 3010)) { throw "MSI install failed with exit code $($install.ExitCode). See $installLog." }
+            if (-not (Test-Path $appExe)) { throw "MSI did not install the application executable." }
+
+            $entry = Get-ItemProperty "HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*" |
+              Where-Object { $_.DisplayName -eq "MuktoDwar" } |
+              Select-Object -First 1
+            if (-not $entry) { throw "MSI uninstall registration was not found." }
+            $match = [regex]::Match([string]$entry.UninstallString, '\{[0-9A-Fa-f-]{36}\}')
+            if (-not $match.Success) { throw "MSI product code could not be read from uninstall registration." }
+            $productCode = $match.Value
+
+            $proc = Start-Process -FilePath $appExe -PassThru
+            $base = "http://127.0.0.1:8787"
+            $health = $null
+            for ($i = 0; $i -lt 60; $i++) {
+              Start-Sleep -Seconds 1
+              try { $health = Invoke-RestMethod "$base/health" -TimeoutSec 3; break } catch {}
+              if ($proc.HasExited) { throw "MSI-installed gateway exited during startup (code $($proc.ExitCode))." }
+            }
+            if (-not $health -or $health.status -ne "ok") { throw "MSI-installed gateway did not become healthy." }
+            $bootstrap = Invoke-RestMethod "$base/admin/default-token" -TimeoutSec 5
+            if (-not $bootstrap.token) { throw "MSI-installed admin token was not created." }
+            $session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+            $headers = @{ Origin = $base }
+            $login = Invoke-RestMethod "$base/admin/session" -Method Post -WebSession $session -Headers $headers -ContentType "application/json" -Body (@{ token = $bootstrap.token } | ConvertTo-Json -Compress) -TimeoutSec 5
+            if (-not $login.ok) { throw "MSI-installed admin login failed." }
+            Write-Host "PASS: MSI install, process startup, localhost health and admin login."
+
+            Stop-Process -Id $proc.Id -Force
+            Wait-Process -Id $proc.Id -Timeout 10 -ErrorAction SilentlyContinue
+            $proc = $null
+
+            $repair = Start-Process msiexec.exe -ArgumentList @("/fa", $productCode, "/qn", "/norestart", "/l*v", "`"$repairLog`"") -Wait -PassThru
+            if ($repair.ExitCode -notin @(0, 3010)) { throw "MSI repair failed with exit code $($repair.ExitCode). See $repairLog." }
+            if (-not (Test-Path $appExe)) { throw "MSI repair removed or failed to restore the application executable." }
+            Write-Host "PASS: MSI repair completed."
+
+            $remove = Start-Process msiexec.exe -ArgumentList @("/x", $productCode, "/qn", "/norestart", "/l*v", "`"$removeLog`"") -Wait -PassThru
+            if ($remove.ExitCode -notin @(0, 3010)) { throw "MSI uninstall failed with exit code $($remove.ExitCode). See $removeLog." }
+            if (Test-Path $appExe) { throw "Application executable remains after MSI uninstall." }
+            $remaining = Get-ItemProperty "HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*" -ErrorAction SilentlyContinue |
+              Where-Object { $_.DisplayName -eq "MuktoDwar" }
+            if ($remaining) { throw "MuktoDwar MSI uninstall registration remains after uninstall." }
+            Write-Host "PASS: MSI uninstall removed the executable and uninstall registration."
+          }
+          finally {
+            if ($proc -and -not $proc.HasExited) {
+              Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
+              Wait-Process -Id $proc.Id -Timeout 10 -ErrorAction SilentlyContinue
+            }
+            if ($productCode -and (Test-Path $appExe)) {
+              Start-Process msiexec.exe -ArgumentList @("/x", $productCode, "/qn", "/norestart") -Wait -ErrorAction SilentlyContinue | Out-Null
+            }
+          }
+
+      - name: Verify output files and SHA-256
         shell: pwsh
         run: |
           if (-not (Test-Path "build/muktodwar.exe")) {
@@ -62,12 +229,8 @@ jobs:
           }
           $setup = Get-ChildItem "build/installer" -Filter "*.exe" -ErrorAction SilentlyContinue
           $msi = Get-ChildItem "build/installer" -Filter "*.msi" -ErrorAction SilentlyContinue
-          if (-not $setup) {
-            throw "The Inno Setup installer was not generated."
-          }
-          if (-not $msi) {
-            throw "The MSI package was not generated."
-          }
+          if (-not $setup) { throw "The Inno Setup installer was not generated." }
+          if (-not $msi) { throw "The MSI package was not generated." }
           $files = @("build/muktodwar.exe") + @($setup.FullName) + @($msi.FullName)
           Get-FileHash $files -Algorithm SHA256
 

@@ -1,6 +1,13 @@
 name: Pages
 
 on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'site/**'
+      - 'assets/brand/**'
+      - 'scripts/build-site.mjs'
+      - '.github/workflows/pages.yml'
   push:
     branches: [main]
     paths:
@@ -10,22 +17,16 @@ on:
       - '.github/workflows/pages.yml'
   workflow_dispatch:
 
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
 concurrency:
-  group: pages
+  group: pages-${{ github.event_name }}
   cancel-in-progress: true
 
 jobs:
-  deploy:
-    name: build and deploy the site
+  build:
+    name: Build and validate static site
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      contents: read
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -35,17 +36,38 @@ jobs:
         with:
           node-version: 26
 
+      - name: Install Chromium for static dashboard screenshots
+        run: |
+          npx --yes playwright install --with-deps chromium
+
+      - name: Capture sanitized dashboard preview (desktop and mobile)
+        run: |
+          mkdir -p site/assets
+          npx --yes playwright screenshot --browser chromium --viewport-size="1440,1000" --full-page "file://$PWD/site/dashboard-preview.html" site/assets/dashboard-preview-desktop.png
+          npx --yes playwright screenshot --browser chromium --viewport-size="390,844" --full-page "file://$PWD/site/dashboard-preview.html" site/assets/dashboard-preview-mobile.png
+          test -s site/assets/dashboard-preview-desktop.png
+          test -s site/assets/dashboard-preview-mobile.png
+
       - name: Build the site
         run: node scripts/build-site.mjs
 
-      - name: Configure Pages
-        uses: actions/configure-pages@v5
-
-      - name: Upload the site artifact
+      - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: dist-site
 
+  deploy:
+    name: Deploy production site
+    if: github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4

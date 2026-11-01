@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>MuktoDwar — Dashboard Preview</title>
+<style>
+:root{color-scheme:dark;--bg:#080d18;--panel:#101a2b;--panel2:#142238;--line:#23344d;--muted:#91a3bd;--text:#e8f1ff;--cyan:#4dd8e8;--purple:#a78bfa;--green:#55d6a2}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 80% -15%,#1b3151 0,transparent 44%),var(--bg);color:var(--text);font:14px/1.5 ui-monospace,SFMono-Regular,Consolas,monospace}
+.shell{max-width:1440px;margin:auto;min-height:100vh;display:grid;grid-template-columns:230px 1fr}.side{padding:26px 18px;border-right:1px solid var(--line);background:#0a1220}.brand{display:flex;gap:12px;align-items:center;font-weight:800;font-size:17px;letter-spacing:.02em}.mark{width:36px;height:36px;border:1px solid #3b7287;border-radius:11px;display:grid;place-items:center;color:var(--cyan);font-size:20px;background:#102b3a}.muted{color:var(--muted)}.nav{margin-top:38px;display:grid;gap:8px}.nav span{padding:11px 13px;border-radius:9px;color:#a8b8ce}.nav .active{background:#13283a;color:var(--cyan);border:1px solid #24495a}.side-foot{position:absolute;bottom:24px;color:#71849f;font-size:11px}.main{padding:30px 34px}.top{display:flex;align-items:center;justify-content:space-between;gap:20px;margin-bottom:28px}.eyebrow{color:var(--cyan);font-size:11px;letter-spacing:.16em;text-transform:uppercase}.h1{font-size:25px;font-weight:800;margin:5px 0}.pill{border:1px solid #275d50;color:var(--green);padding:7px 11px;border-radius:99px;font-size:11px}.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}.card{background:linear-gradient(145deg,#142238,#0e1727);border:1px solid var(--line);border-radius:14px;padding:18px;min-width:0}.label{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.1em}.value{font-size:25px;font-weight:800;margin:9px 0 3px}.good{color:var(--green)}.cyan{color:var(--cyan)}.purple{color:var(--purple)}.section{margin-top:18px;display:grid;grid-template-columns:1.4fr 1fr;gap:14px}.section h2{font-size:14px;margin:0 0 16px}.row{display:flex;justify-content:space-between;gap:12px;padding:12px 0;border-top:1px solid #203049}.row:first-of-type{border-top:0}.tag{font-size:10px;border:1px solid #275d50;color:var(--green);padding:3px 8px;border-radius:99px;white-space:nowrap}.tag.idle{border-color:#43516a;color:#a7b4c9}.bar{height:7px;background:#26364e;border-radius:8px;overflow:hidden;margin-top:8px}.bar i{display:block;height:100%;width:74%;background:linear-gradient(90deg,var(--cyan),var(--purple));border-radius:8px}.notice{margin-top:16px;border:1px solid #28465c;background:#102236;border-radius:12px;padding:14px;color:#bfd5eb;font-size:12px}.notice strong{color:var(--cyan)}footer{margin-top:28px;color:#70839e;font-size:10px}
+@media(max-width:900px){.shell{grid-template-columns:1fr}.side{position:static;padding:15px 18px;border-right:0;border-bottom:1px solid var(--line)}.nav{display:flex;overflow:auto;margin-top:15px}.nav span{white-space:nowrap;padding:8px 11px}.side-foot{display:none}.main{padding:22px 18px}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.section{grid-template-columns:1fr}}
+@media(max-width:480px){.top{align-items:flex-start;flex-direction:column}.h1{font-size:21px}.grid{gap:9px}.card{padding:13px}.value{font-size:21px}.main{padding:18px 13px}}
+</style>
+</head>
+<body>
+<div class="shell">
+<aside class="side">
+<div class="brand"><div class="mark">M</div><div>MuktoDwar<div class="muted" style="font-size:10px;font-weight:400">LOCAL AI GATEWAY</div></div></div>
+<nav class="nav" aria-label="Preview navigation"><span class="active">Overview</span><span>Providers</span><span>Models</span><span>Tokens</span><span>Playground</span><span>Settings</span></nav>
+<div class="side-foot">PREVIEW DATA · NOT CONNECTED</div>
+</aside>
+<main class="main">
+<header class="top"><div><div class="eyebrow">Developer workspace / Overview</div><div class="h1">Gateway dashboard</div><div class="muted">Your local AI routing at a glance.</div></div><div class="pill">● LOOPBACK ONLY</div></header>
+<section class="grid" aria-label="Gateway summary">
+<div class="card"><div class="label">Gateway status</div><div class="value good">Online</div><div class="muted">127.0.0.1:8787</div></div>
+<div class="card"><div class="label">Active providers</div><div class="value cyan">03</div><div class="muted">of 5 configured</div></div>
+<div class="card"><div class="label">Free models</div><div class="value purple">24</div><div class="muted">verified allowlist</div></div>
+<div class="card"><div class="label">Requests today</div><div class="value">1,284</div><div class="muted">synthetic preview metric</div></div>
+</section>
+<section class="section">
+<div class="card"><h2>Provider health</h2>
+<div class="row"><span>Kilo Gateway</span><span class="tag">HEALTHY</span></div>
+<div class="row"><span>OpenCode Zen</span><span class="tag">HEALTHY</span></div>
+<div class="row"><span>Cloudflare Workers AI</span><span class="tag idle">STANDBY</span></div>
+<div class="row"><span>Custom endpoint</span><span class="tag idle">DISABLED</span></div>
+</div>
+<div class="card"><h2>Routing overview</h2><div class="label">Primary route</div><div class="value cyan" style="font-size:19px">mukto-auto/free</div><div class="muted">Priority → latency → provider health</div><div style="margin-top:20px" class="label">Capacity indicator</div><div class="bar"><i></i></div><div class="muted" style="margin-top:7px">74% · illustrative only</div></div>
+</section>
+<div class="notice"><strong>Privacy note</strong> — This is a static product preview populated entirely with fictional sample values. It does not connect to a gateway or contain credentials, tokens, sessions, provider keys, or live machine data.</div>
+<footer>MUKTODWAR · STATIC DASHBOARD PREVIEW · SAMPLE DATA ONLY</footer>
+</main>
+</div>
+</body>
+</html>

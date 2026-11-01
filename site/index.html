@@ -21,6 +21,7 @@
 
       <nav class="header-nav">
         <a href="#logos">লোগো</a>
+        <a href="#dashboard-preview">Dashboard</a>
         <a href="#features">ফিচার</a>
         <a href="#quickstart">Quick start</a>
         <a href="#brand">ব্র্যান্ড</a>
@@ -108,6 +109,25 @@
       </div>
     </section>
 
+    <!-- ================= DASHBOARD PREVIEW ================= -->
+    <section class="section" id="dashboard-preview">
+      <div class="wrap">
+        <div class="section__head">
+          <h2>Dashboard preview</h2>
+          <p>Responsive static preview · synthetic data only</p>
+        </div>
+        <div class="card">
+          <a href="dashboard-preview.html" aria-label="Open interactive static dashboard preview">
+            <picture>
+              <source media="(max-width: 700px)" srcset="assets/dashboard-preview-mobile.png" />
+              <img src="assets/dashboard-preview-desktop.png" alt="MuktoDwar dashboard preview with synthetic provider and gateway status" loading="lazy" style="display:block;width:100%;height:auto;border-radius:10px;border:1px solid var(--line, #23344d)" />
+            </picture>
+          </a>
+          <p class="card__body">This preview is disconnected from the local gateway. All displayed provider names, status values and metrics are fictional sample data. <a href="dashboard-preview.html">Open responsive dashboard preview</a>.</p>
+        </div>
+      </div>
+    </section>
+
     <!-- ================= 2. FEATURES ================= -->
     <section class="section" id="features">
       <div class="wrap">
@@ -121,7 +141,7 @@
             <h3 class="card__title">🖥️ Local only</h3>
             <p class="card__body">
               Binds to <code>127.0.0.1</code> and refuses to start on any other address.
-              No cloud account, no external hosting, no telemetry, no auto-updates.
+              No cloud account, no external hosting, no telemetry, and no unattended installation.
             </p>
           </div>
           <div class="card">
