@@ -1,6 +1,13 @@
 name: Pages
 
 on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'site/**'
+      - 'assets/brand/**'
+      - 'scripts/build-site.mjs'
+      - '.github/workflows/pages.yml'
   push:
     branches: [main]
     paths:
@@ -16,7 +23,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: pages
+  group: pages-${{ github.event_name }}
   cancel-in-progress: true
 
 jobs:
@@ -57,5 +64,6 @@ jobs:
           path: dist-site
 
       - name: Deploy to GitHub Pages
+        if: github.event_name != 'pull_request'
         id: deployment
         uses: actions/deploy-pages@v4
