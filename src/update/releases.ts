@@ -101,12 +101,19 @@ export async function fetchLatestRelease(
       automaticInstallationAllowed: false, publisherThumbprint: null };
   }
 
+  if (typeof manifestAsset.size !== 'number' || manifestAsset.size <= 0 || manifestAsset.size > 64 * 1024) return null;
   const manifestResponse = await fetcher(manifestAsset.browser_download_url, {
     headers: { 'User-Agent': 'MuktoDwar' },
-    redirect: 'error',
+    redirect: 'follow',
     signal: AbortSignal.timeout(8_000),
   });
   if (!manifestResponse.ok) return null;
+  if (manifestResponse.url) {
+    try {
+      const finalHost = new URL(manifestResponse.url).hostname;
+      if (finalHost !== 'github.com' && finalHost !== 'release-assets.githubusercontent.com') return null;
+    } catch { return null; }
+  }
   const manifestText = await manifestResponse.text();
   if (manifestText.length > 64 * 1024) return null;
 
