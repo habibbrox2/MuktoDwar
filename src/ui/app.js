@@ -191,6 +191,7 @@ async function enterConsole() {
   $('gate').hidden = true;
   $('console').hidden = false;
   await refreshAll();
+  if (!$('console').hidden) await checkUpdate();
 }
 
 async function lockConsole() {
