@@ -61,6 +61,16 @@ function validVersion(value: unknown): value is string {
   return typeof value === 'string' && /^\d+\.\d+\.\d+$/.test(value);
 }
 
+function isNewerVersion(candidate: string, current: string): boolean {
+  const next = candidate.split('.').map(Number);
+  const installed = current.split('.').map(Number);
+  for (let index = 0; index < 3; index += 1) {
+    if (next[index]! > installed[index]!) return true;
+    if (next[index]! < installed[index]!) return false;
+  }
+  return false;
+}
+
 function isTrustedReleaseAsset(asset: GitHubAsset, tag: string): boolean {
   return asset.name === MANIFEST_NAME &&
     asset.browser_download_url === `https://github.com/habibbrox2/MuktoDwar/releases/download/${tag}/${MANIFEST_NAME}`;
@@ -82,6 +92,7 @@ export async function fetchLatestRelease(
   const release = await releaseResponse.json() as GitHubRelease;
   const tag = release.tag_name ?? '';
   if (!/^v\d+\.\d+\.\d+$/.test(tag) || release.html_url !== RELEASE_PAGE + tag) return null;
+  if (!isNewerVersion(tag.slice(1), currentVersion)) return null;
 
   const assets = Array.isArray(release.assets) ? release.assets : [];
   const manifestAsset = assets.find((asset) => isTrustedReleaseAsset(asset, tag));
