@@ -79,10 +79,13 @@ export async function downloadAndVerifyInstaller(
     headers: { 'User-Agent': 'MuktoDwar' }, redirect: 'follow', signal: AbortSignal.timeout(120_000),
   });
   if (!response.ok || !response.body) throw new Error('Installer download failed.');
-  if (response.url) {
-    let hostname: string;
-    try { hostname = new URL(response.url).hostname; } catch { throw new Error('Installer download URL is invalid.'); }
-    if (!ALLOWED_DOWNLOAD_HOSTS.has(hostname)) throw new Error('Installer download redirected to an untrusted host.');
+  // Native fetch exposes the final URL after redirects. An empty URL is
+  // ambiguous (notably in custom fetch adapters), so never stage in that case.
+  if (!response.url) throw new Error('Installer download final URL could not be verified.');
+  let finalUrl: URL;
+  try { finalUrl = new URL(response.url); } catch { throw new Error('Installer download URL is invalid.'); }
+  if (finalUrl.protocol !== 'https:' || !ALLOWED_DOWNLOAD_HOSTS.has(finalUrl.hostname)) {
+    throw new Error('Installer download redirected to an untrusted host.');
   }
   const declaredLength = Number(response.headers.get('content-length'));
   if (Number.isFinite(declaredLength) && declaredLength > 0 && declaredLength !== release.installer.size) {

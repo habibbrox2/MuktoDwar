@@ -48,6 +48,14 @@ describe('secure installer staging', () => {
     expect(fetcher).not.toHaveBeenCalled();
   });
 
+  it('rejects a download response whose final URL is unavailable', async () => {
+    const response = new Response(bytes, { status: 200 });
+    const fetcher = vi.fn().mockResolvedValue(response);
+    await expect(downloadAndVerifyInstaller(release(), pin, {
+      fetcher: fetcher as typeof fetch, verifyAuthenticode: vi.fn().mockResolvedValue(true),
+    })).rejects.toThrow(/final URL could not be verified/i);
+  });
+
   it('rejects a download redirected to an untrusted host', async () => {
     const fetcher = vi.fn().mockResolvedValue(downloadResponse(bytes, 'https://attacker.example/payload'));
     await expect(downloadAndVerifyInstaller(release(), pin, {
@@ -64,6 +72,17 @@ describe('secure installer staging', () => {
       verifyAuthenticode: vi.fn().mockResolvedValue(true),
     })).rejects.toThrow(/SHA-256 or size verification failed/i);
     expect(await readdir(root)).toEqual([]);
+  });
+
+  it('normalizes certificate thumbprint formatting before comparing the independent pin', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'muktodwar-installer-test-'));
+    roots.push(root);
+    const formattedPin = pin.match(/.{1,2}/g)!.join(':');
+    const staged = await downloadAndVerifyInstaller(release({ publisherThumbprint: formattedPin }), pin, {
+      fetcher: vi.fn().mockResolvedValue(downloadResponse(bytes)) as typeof fetch,
+      destinationRoot: root, verifyAuthenticode: vi.fn().mockResolvedValue(true),
+    });
+    expect(staged.publisherThumbprint).toBe(pin);
   });
 
   it('stages the installer only after hash and publisher verification succeed', async () => {
