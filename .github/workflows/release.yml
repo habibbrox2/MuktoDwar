@@ -3,8 +3,6 @@ name: Release Windows
 on:
   push:
     branches: [main]
-    tags: ['v*']
-  workflow_dispatch:
 
 permissions:
   contents: write
@@ -15,6 +13,21 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Resolve release version and guard tag
+        id: version
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          if ($version -notmatch '^[0-9]+\.[0-9]+\.[0-9]+$') { throw "Invalid package version: $version" }
+          $tag = "v$version"
+          $existing = git ls-remote --tags origin "refs/tags/$tag"
+          if ($LASTEXITCODE -ne 0) { throw 'Unable to check remote tags.' }
+          if ($existing) { throw "Release tag $tag already exists; refusing to overwrite an existing release." }
+          "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          "tag=$tag" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          Write-Host "Preparing MuktoDwar $tag"
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -67,10 +80,12 @@ jobs:
           WINDOWS_SIGNING_CERT_THUMBPRINT: ${{ secrets.WINDOWS_SIGNING_CERT_THUMBPRINT }}
         run: |
           $ErrorActionPreference = 'Stop'
+          $env:RELEASE_VERSION = '${{ steps.version.outputs.version }}'
+          $env:RELEASE_TAG = '${{ steps.version.outputs.tag }}'
           $files = @(
             'build/muktodwar.exe',
-            'build/installer/MuktoDwar-Setup.exe',
-            'build/installer/MuktoDwar.msi'
+            "build/installer/MuktoDwar-Setup-$($env:RELEASE_VERSION)-x64.exe",
+            "build/installer/MuktoDwar-Setup-$($env:RELEASE_VERSION)-x64.msi"
           )
           foreach ($file in $files) {
             if (-not (Test-Path $file -PathType Leaf)) { throw "Missing release file: $file" }
@@ -137,7 +152,7 @@ jobs:
           $manifest = [ordered]@{
             schemaVersion = 1
             version = (Get-Content package.json -Raw | ConvertFrom-Json).version
-            tag = if ($env:GITHUB_REF -like 'refs/tags/*') { $env:GITHUB_REF.Substring(10) } else { $null }
+            tag = $env:RELEASE_TAG
             generatedAt = [DateTime]::UtcNow.ToString('o')
             authenticodeSigned = $signed
             publisherThumbprint = $publisherThumbprint
@@ -154,8 +169,8 @@ jobs:
           name: muktodwar-windows-${{ github.run_number }}
           path: |
             build/muktodwar.exe
-            build/installer/*.exe
-            build/installer/*.msi
+            build/installer/MuktoDwar-Setup-${{ steps.version.outputs.version }}-x64.exe
+            build/installer/MuktoDwar-Setup-${{ steps.version.outputs.version }}-x64.msi
             build/installer/update-manifest.json
             build/installer/SHA256SUMS.txt
 

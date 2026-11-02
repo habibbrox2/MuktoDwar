@@ -56,6 +56,9 @@ $VerifyScript = Resolve-RepoPath 'scripts/verify-msi.mjs'
 $Version = (Get-Content (Resolve-RepoPath 'package.json') -Raw | ConvertFrom-Json).version
 if ($Version -notmatch '^[0-9]+\.[0-9]+\.[0-9]+$') { throw "Invalid package version: $Version" }
 $MsiName = "MuktoDwar-Setup-$Version-x64.msi"
+$Version = (Get-Content (Resolve-RepoPath 'package.json') -Raw | ConvertFrom-Json).version
+if ($Version -notmatch '^[0-9]+\.[0-9]+\.[0-9]+$') { throw "Invalid package version: $Version" }
+$MsiName = "MuktoDwar-Setup-$Version-x64.msi"
 
 if (-not (Test-Path $AppDir)) { throw "The application folder '$AppDir' does not exist. Build the app first." }
 if (-not (Test-Path $Package)) { throw "The WiX source '$Package' was not found." }
