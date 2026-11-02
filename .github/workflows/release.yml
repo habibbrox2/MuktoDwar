@@ -184,8 +184,8 @@ jobs:
           name: MuktoDwar ${{ steps.version.outputs.tag }}
           files: |
             build/muktodwar.exe
-            build/installer/*.exe
-            build/installer/*.msi
+            build/installer/MuktoDwar-Setup-${{ steps.version.outputs.version }}-x64.exe
+            build/installer/MuktoDwar-Setup-${{ steps.version.outputs.version }}-x64.msi
             build/installer/update-manifest.json
             build/installer/SHA256SUMS.txt
           generate_release_notes: true
