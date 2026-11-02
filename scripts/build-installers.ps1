@@ -1,7 +1,7 @@
 # Builds the two Windows installers from one application build.
 #
-#   * Inno Setup  -> build/installer/MuktoDwar-Setup.exe  (end users)
-#   * WiX Toolset -> build/installer/MuktoDwar.msi         (managed deployment)
+#   * Inno Setup  -> build/installer/MuktoDwar-Setup-<version>-x64.exe
+#   * WiX Toolset -> build/installer/MuktoDwar-Setup-<version>-x64.msi
 #
 # Both packages contain the same application files, carry the same version,
 # install into the same directory and follow the same uninstall policy.
@@ -53,6 +53,9 @@ $Harvested = Resolve-RepoPath 'installer/harvested.wxs'
 $Package = Resolve-RepoPath 'installer/muktodwar.wxs'
 $InnoScript = Resolve-RepoPath 'installer/muktodwar.iss'
 $VerifyScript = Resolve-RepoPath 'scripts/verify-msi.mjs'
+$Version = (Get-Content (Resolve-RepoPath 'package.json') -Raw | ConvertFrom-Json).version
+if ($Version -notmatch '^[0-9]+\.[0-9]+\.[0-9]+$') { throw "Invalid package version: $Version" }
+$MsiName = "MuktoDwar-Setup-$Version-x64.msi"
 
 if (-not (Test-Path $AppDir)) { throw "The application folder '$AppDir' does not exist. Build the app first." }
 if (-not (Test-Path $Package)) { throw "The WiX source '$Package' was not found." }
@@ -81,7 +84,7 @@ if (-not $Iscc) {
 }
 
 Write-Host "==> Inno Setup: $Iscc"
-& $Iscc $InnoScript
+& $Iscc "/DMyAppVersion=$Version" $InnoScript
 if ($LASTEXITCODE -ne 0) { throw 'Inno Setup build failed.' }
 
 # --- WiX Toolset (MSI package) ---------------------------------------------
@@ -114,7 +117,7 @@ candle "-dSourceDir=$AppRel" installer/muktodwar.wxs installer/harvested.wxs -ou
 if ($LASTEXITCODE -ne 0) { throw 'WiX compilation failed.' }
 
 # Link the MSI. The cabinet is embedded, so the .msi is self-contained.
-light build/muktodwar.wixobj build/harvested.wixobj -out "$OutputRel/MuktoDwar.msi"
+light build/muktodwar.wixobj build/harvested.wixobj -out "$OutputRel/$MsiName"
 if ($LASTEXITCODE -ne 0) { throw 'WiX linking failed.' }
 
 }
@@ -123,7 +126,7 @@ finally {
 }
 
 # Guard against an MSI that references a loose .cab file next to it.
-node $VerifyScript "$OutputDir/MuktoDwar.msi"
+node $VerifyScript (Join-Path $OutputDir $MsiName)
 if ($LASTEXITCODE -ne 0) { throw 'The generated MSI failed verification.' }
 
 Write-Host '==> Installers ready:'
